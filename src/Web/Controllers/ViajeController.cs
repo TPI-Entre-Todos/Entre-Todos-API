@@ -16,23 +16,29 @@ namespace Web.Controllers
         }
 
         [HttpPost]
-        public IActionResult AgregarViaje(Viaje viaje)
+        public IActionResult Add(Viaje viaje)
         {
-            _viajeService.AgregarViaje(viaje);
+            _viajeService.Add(viaje);
             return Ok();
         }
 
         [HttpGet]
-        public IActionResult ObtenerViajes()
+        public IActionResult Get()
         {
-            var viajes = _viajeService.ObtenerViajes();
+            var viajes = _viajeService.Get();
             return Ok(viajes);
         }
-        [HttpDelete("{id}")]
-        public IActionResult EliminarViaje([FromRoute] int id)
+        [HttpGet("{id:int}")]
+        public IActionResult GetById([FromRoute] int id) 
         {
-            _viajeService.EliminarViaje(id);
-            return Ok();
+            var viajes = _viajeService.GetById(id);
+            return Ok(viajes);
+        }
+        [HttpDelete("{id:int}")]
+        public IActionResult Delete([FromRoute] int id)
+        {
+            _viajeService.Delete(id);
+            return NoContent();
         }
     }
 }

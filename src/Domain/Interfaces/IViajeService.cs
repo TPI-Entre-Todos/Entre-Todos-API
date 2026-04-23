@@ -3,8 +3,9 @@ namespace Domain.Interfaces
 {
     public interface IViajeService
     {
-        void AgregarViaje(Viaje viaje);
-        List<Viaje> ObtenerViajes();
-        public void EliminarViaje(int id);
+        void Add(Viaje viaje);
+        List<Viaje> Get();
+        Viaje GetById(int id);
+        public void Delete(int id);
     }
 }
