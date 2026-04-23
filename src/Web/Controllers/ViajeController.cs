@@ -18,8 +18,8 @@ namespace Web.Controllers
         [HttpPost]
         public IActionResult Add(Viaje viaje)
         {
-            _viajeService.Add(viaje);
-            return Ok();
+            var result = _viajeService.Add(viaje);
+            return CreatedAtAction(nameof(Get),result);
         }
 
         [HttpGet]

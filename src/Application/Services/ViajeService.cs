@@ -9,11 +9,12 @@ namespace Application.Services
 
         private readonly static List<Viaje> _viajes = [];
 
-        public void Add(Viaje viaje)
+        public Viaje Add(Viaje viaje)
         {
             //viaje.Id = _viajes.Count + 1;
             viaje.Id = _viajes.Count > 0 ? _viajes.Max(v => v.Id) + 1 : 0;
             _viajes.Add(viaje);
+            return viaje;
         }
 
         public List<Viaje> Get()
