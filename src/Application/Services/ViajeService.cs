@@ -7,34 +7,29 @@ namespace Application.Services
     public class ViajeService : IViajeService
     {
 
-        private readonly static List<Viaje> _viajes = [];
-
+        private readonly IViajeRepository _viajeRepository;
+        public ViajeService(IViajeRepository viajeRepository)
+        {_viajeRepository = viajeRepository;}
         public Viaje Add(Viaje viaje)
         {
             //viaje.Id = _viajes.Count + 1;
-            viaje.Id = _viajes.Count > 0 ? _viajes.Max(v => v.Id) + 1 : 0;
-            _viajes.Add(viaje);
+            _viajeRepository.Add(viaje);
             return viaje;
         }
 
         public List<Viaje> Get()
         {
-            return _viajes;
+            return (List<Viaje>)_viajeRepository;
         }
 
         public Viaje GetById(int id)
         {
-            var viaje = _viajes.FirstOrDefault(v => v.Id == id);
-            return viaje;
+            return _viajeRepository.GetById(id);
         }
 
         public void Delete(int id)
         {
-            var viaje = _viajes.FirstOrDefault(v => v.Id == id);
-            if (viaje != null)
-            {
-                _viajes.Remove(viaje);
-            }
+            _viajeRepository.Delete(id);
         }
     }
 }
