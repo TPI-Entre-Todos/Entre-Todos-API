@@ -9,7 +9,7 @@ namespace Application.Services
 
         private readonly IViajeRepository _viajeRepository;
         public ViajeService(IViajeRepository viajeRepository)
-        {_viajeRepository = viajeRepository;}
+        { _viajeRepository = viajeRepository; }
         public Viaje Add(Viaje viaje)
         {
             //viaje.Id = _viajes.Count + 1;
@@ -19,7 +19,7 @@ namespace Application.Services
 
         public List<Viaje> Get()
         {
-            return (List<Viaje>)_viajeRepository;
+            return _viajeRepository.GetAll();
         }
 
         public Viaje GetById(int id)

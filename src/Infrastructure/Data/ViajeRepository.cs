@@ -14,13 +14,18 @@ public class ViajeRepository : IViajeRepository
         _context = dbContext;
     }
 
+    public List<Viaje> GetAll()
+    {
+        return _context.Viajes.ToList();
+    }
+
     public Viaje GetById(int id)
     {
         return _context.Viajes.FirstOrDefault(v => v.Id == id);
-        
+
     }
 
-     public Viaje Add(Viaje entity)
+    public Viaje Add(Viaje entity)
     {
         _context.Viajes.Add(entity);
 
@@ -31,8 +36,11 @@ public class ViajeRepository : IViajeRepository
 
     public void Delete(int id)
     {
-        _context.Viajes.FirstOrDefault(v => v.Id == id);
-
-        _context.SaveChanges();
+        var viaje = _context.Viajes.FirstOrDefault(v => v.Id == id);
+        if (viaje != null)
+        {
+            _context.Viajes.Remove(viaje);
+            _context.SaveChanges();
+        }
     }
 }
