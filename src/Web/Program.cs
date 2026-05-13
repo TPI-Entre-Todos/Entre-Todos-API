@@ -1,5 +1,9 @@
 using Application.Services;
 using Domain.Interfaces;
+using Infraestructure.Data;
+using Infrastructure.Data;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,8 +12,21 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddScoped<IViajeRepository, ViajeRepository>();
 builder.Services.AddScoped<IViajeService, ViajeService>();
 
+// Configuración de la conexión SQLite
+var connection = new SqliteConnection("DataSource = EntreTodos.db");
+connection.Open();
+
+// journal mode
+using (var command = connection.CreateCommand())
+{
+    command.CommandText = "PRAGMA journal_mode = DELETE;";
+    command.ExecuteNonQuery();
+}
+
+builder.Services.AddDbContext<ApplicationContext>(dbContextOptions => dbContextOptions.UseSqlite(connection));
 
 var app = builder.Build();
 
