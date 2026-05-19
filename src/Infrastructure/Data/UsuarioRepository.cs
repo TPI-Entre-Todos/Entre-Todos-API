@@ -58,4 +58,9 @@ public class UsuarioRepository : IUsuarioRepository
         }
     }
 
+    public Usuario GetUserByEmail(string email)
+    {
+        return _context.Usuarios.FirstOrDefault(u => u.Email == email);
+    }
+
 }

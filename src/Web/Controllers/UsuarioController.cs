@@ -2,11 +2,12 @@ using Application.Interfaces;
 using Application.Models.Requests;
 using Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.AspNetCore.Authorization;
 namespace Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class UsuarioController : ControllerBase
     {
 

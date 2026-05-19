@@ -52,5 +52,9 @@ namespace Application.Services
             _usuarioRepository.Delete(id);
         }
 
+        public Usuario GetUserByEmail(string email)
+        {
+            return _usuarioRepository.GetUserByEmail(email);
+        }
     }
 }

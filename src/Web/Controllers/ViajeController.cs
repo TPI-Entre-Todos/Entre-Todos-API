@@ -2,10 +2,12 @@ using Application.Services;
 using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 namespace Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class ViajeController : ControllerBase
     {
         private readonly IViajeService _viajeService;
@@ -19,7 +21,7 @@ namespace Web.Controllers
         public IActionResult Add(Viaje viaje)
         {
             var result = _viajeService.Add(viaje);
-            return CreatedAtAction(nameof(Get),result);
+            return CreatedAtAction(nameof(Get), result);
         }
 
         [HttpGet]
@@ -29,7 +31,7 @@ namespace Web.Controllers
             return Ok(viajes);
         }
         [HttpGet("{id:int}")]
-        public IActionResult GetById([FromRoute] int id) 
+        public IActionResult GetById([FromRoute] int id)
         {
             var viajes = _viajeService.GetById(id);
             return Ok(viajes);

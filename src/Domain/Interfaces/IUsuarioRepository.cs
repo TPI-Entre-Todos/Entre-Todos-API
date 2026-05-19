@@ -9,5 +9,6 @@ namespace Domain.Interfaces
         Usuario Add(Usuario entity);
         Usuario Update(Usuario entity);
         void Delete(int id);
+        public Usuario GetUserByEmail(string email);
     }
 }
