@@ -1,3 +1,5 @@
+using Domain.Enums;
+
 namespace Domain.Entities
 {
     public class Usuario
@@ -25,8 +27,3 @@ namespace Domain.Entities
 
 
 
-public enum Rol
-{
-    User,
-    Admin
-}
