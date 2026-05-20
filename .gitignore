@@ -483,3 +483,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+src/Web/Web.csproj.lscache
+src/Application/Application.csproj.lscache
+src/Domain/Domain.csproj.lscache
+src/Infrastructure/Infrastructure.csproj.lscache
