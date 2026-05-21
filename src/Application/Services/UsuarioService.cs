@@ -3,6 +3,7 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Application.Interfaces;
 using Application.Models.Requests;
+using Application.Models;
 
 namespace Application.Services
 {
@@ -15,24 +16,27 @@ namespace Application.Services
             _usuarioRepository = usuarioRepository;
         }
 
-        public List<Usuario> GetAll()
+        public List<UsuarioDto> GetAll()
         {
-            return _usuarioRepository.GetAll();
+            List<Usuario> usuarios = _usuarioRepository.GetAll();
+
+            return UsuarioDto.CreateList(usuarios);
         }
 
-        public Usuario GetById(int id)
+        public UsuarioDto GetById(int id)
         {
-            return _usuarioRepository.GetById(id);
+            Usuario? usuario = _usuarioRepository.GetById(id);
+            return UsuarioDto.Create(usuario);
         }
 
-        public Usuario Add(UsuarioRequest request)
+        public UsuarioDto Add(UsuarioRequest request)
         {
             Usuario usuario = new(request.Nombre, request.Email, request.Password);
-
-            return _usuarioRepository.Add(usuario);
+            _usuarioRepository.Add(usuario);
+            return UsuarioDto.Create(usuario);
         }
 
-        public Usuario Update(int id, UsuarioRequest request)
+        public UsuarioDto Update(int id, UsuarioRequest request)
         {
             Usuario? existing = _usuarioRepository.GetById(id);
             if (existing != null)
@@ -44,7 +48,7 @@ namespace Application.Services
                 if (!string.IsNullOrEmpty(request.Password))
                     existing.Password = request.Password;
             }
-            return _usuarioRepository.Update(existing);
+            return UsuarioDto.Create(_usuarioRepository.Update(existing));
         }
 
         public void Delete(int id)

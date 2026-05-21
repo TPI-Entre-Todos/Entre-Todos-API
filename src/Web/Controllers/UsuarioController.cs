@@ -18,6 +18,7 @@ namespace Web.Controllers
             _usuarioService = usuarioService;
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public IActionResult Add(UsuarioRequest request)
         {

@@ -1,16 +1,16 @@
 
 using Application.Models.Requests;
 using Domain.Entities;
-
+using Application.Models;
 
 namespace Application.Interfaces
 {
     public interface IUsuarioService
     {
-        List<Usuario> GetAll();
-        Usuario GetById(int id);
-        Usuario Add(UsuarioRequest request);
-        Usuario Update(int id, UsuarioRequest request);
+        List<UsuarioDto> GetAll();
+        UsuarioDto GetById(int id);
+        UsuarioDto Add(UsuarioRequest request);
+        UsuarioDto Update(int id, UsuarioRequest request);
         void Delete(int id);
     }
 }
