@@ -1,4 +1,6 @@
 using Domain.Enums;
+using System.Collections.Generic;
+using System;
 
 namespace Domain.Entities
 {
@@ -11,7 +13,7 @@ namespace Domain.Entities
         public string Password { get; set; }
         public DateTime FechaRegistro { get; set; }
         public Rol Rol { get; set; }
-
+        public ICollection<ParticipanteViaje> ParticipantesViaje { get; set; } = new List<ParticipanteViaje>();
         public Usuario(string nombre, string email, string password)
         {
             Nombre = nombre;

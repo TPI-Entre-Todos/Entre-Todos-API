@@ -21,6 +21,8 @@ builder.Services.AddScoped<IViajeRepository, ViajeRepository>();
 builder.Services.AddScoped<IViajeService, ViajeService>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IParticipanteViajeRepository, ParticipanteViajeRepository>();
+
 
 // Configuración de la conexión SQLite
 var connection = new SqliteConnection("DataSource = EntreTodos.db");
