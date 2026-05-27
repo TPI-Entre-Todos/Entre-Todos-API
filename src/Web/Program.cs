@@ -22,7 +22,11 @@ builder.Services.AddScoped<IViajeService, ViajeService>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IParticipanteViajeRepository, ParticipanteViajeRepository>();
+// 1. Registramos la interfaz con su implementación (Capa de Datos)
+builder.Services.AddScoped<Domain.Interfaces.IParticipanteViajeRepository, Infrastructure.Data.ParticipanteViajeRepository>();
 
+// 2. Registramos la clase del Servicio (Capa de Lógica de Negocio)
+builder.Services.AddScoped<Application.ParticipanteViajeService>();
 
 // Configuración de la conexión SQLite
 var connection = new SqliteConnection("DataSource = EntreTodos.db");
