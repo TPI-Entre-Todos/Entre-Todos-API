@@ -12,8 +12,6 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
-
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
@@ -21,6 +19,7 @@ builder.Services.AddScoped<IViajeRepository, ViajeRepository>();
 builder.Services.AddScoped<IViajeService, ViajeService>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Configuración de la conexión SQLite
 var connection = new SqliteConnection("DataSource = EntreTodos.db");
@@ -73,22 +72,26 @@ builder.Services.AddOpenApi(options =>
 
 
 
-builder.Services.AddAuthentication("Bearer")
-   .AddJwtBearer(options =>
-   {
-       options.TokenValidationParameters = new TokenValidationParameters
-       {
-           ValidateIssuer = true,
-           ValidateAudience = true,
-           ValidateIssuerSigningKey = true,
-           ValidIssuer = builder.Configuration["Authentication:Issuer"],
-           ValidAudience = builder.Configuration["Authentication:Audience"],
-           IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Authentication:SecretForKey"]))
-       };
-   });
+builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Authentication:Issuer"],
+        ValidAudience = builder.Configuration["Authentication:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Authentication:SecretForKey"]))
+    };
+});
 
 builder.Services.Configure<AutenticacionServiceOptions>(builder.Configuration.GetSection("Authentication"));
 
+builder.Services.AddHttpClient("brevoClient", client =>
+            {
+                client.BaseAddress =
+                    new Uri("https://api.brevo.com/v3/");
+            });
 
 var app = builder.Build();
 
@@ -98,7 +101,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "My API V1");
-        options.RoutePrefix = string.Empty;
+
     });
     app.MapOpenApi();
 }
