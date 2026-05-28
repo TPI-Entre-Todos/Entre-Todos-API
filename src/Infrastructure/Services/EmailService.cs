@@ -39,7 +39,7 @@ public class EmailService : IEmailService
                 new { email = to }
             },
 
-            subject = subject,
+            subject,
 
             htmlContent = html
         };
