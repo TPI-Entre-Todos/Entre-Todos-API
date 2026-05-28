@@ -10,7 +10,7 @@ namespace Domain.Entities
         public DateTime FechaIngreso { get; set; }
         public string Estado { get; set; }
         public string EstadoInvitacion { get; set; }
-        
+
         // Relaciones
         public Usuario Usuario { get; set; }
         public Viaje Viaje { get; set; }

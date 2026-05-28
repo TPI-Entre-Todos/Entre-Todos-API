@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Application.Models; 
-using Domain.Entities;    
-using Domain.Interfaces;  
+using Application.Models;
+using Domain.Entities;
+using Domain.Interfaces;
+using Application.Interfaces;
 
-namespace Application
+namespace Application.Services
 {
-    public class ParticipanteViajeService
+    public class ParticipanteViajeService : IParticipanteViajeService
     {
         private readonly IParticipanteViajeRepository _repository;
 
@@ -28,7 +29,7 @@ namespace Application
                 UsuarioId = dto.UsuarioId,
                 ViajeId = dto.ViajeId,
                 EsOrganizador = dto.EsOrganizador,
-                SaldoTotal = 0, 
+                SaldoTotal = 0,
                 FechaIngreso = DateTime.Now,
                 Estado = "Activo",
                 EstadoInvitacion = dto.EsOrganizador ? "Aceptada" : "Pendiente"
@@ -54,7 +55,7 @@ namespace Application
         public async Task<List<ParticipanteViajeDto>> ObtenerPorViajeAsync(int viajeId)
         {
             var lista = await _repository.GetByViajeIdAsync(viajeId);
-            
+
             // Usamos una línea directa de LINQ para convertir la lista a DTOs
             return lista.Select(p => new ParticipanteViajeDto
             {
@@ -75,10 +76,10 @@ namespace Application
             var participante = await _repository.GetByIdAsync(id);
             if (participante == null) throw new Exception("Participante no encontrado.");
 
-            participante.EstadoInvitacion = nuevoEstado; 
+            participante.EstadoInvitacion = nuevoEstado;
             if (nuevoEstado == "Rechazada")
             {
-                participante.Estado = "Inactivo"; 
+                participante.Estado = "Inactivo";
             }
 
             await _repository.UpdateAsync(participante);
@@ -90,7 +91,7 @@ namespace Application
             var participante = await _repository.GetByIdAsync(id);
             if (participante == null) throw new Exception("Participante no encontrado.");
 
-            if (participante.SaldoTotal != 0) 
+            if (participante.SaldoTotal != 0)
                 throw new Exception("No se puede eliminar un participante con saldos pendientes.");
 
             await _repository.DeleteAsync(id);

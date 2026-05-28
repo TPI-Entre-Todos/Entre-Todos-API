@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Application;      
+using Application.Interfaces;
 using Application.Models;
 namespace Web.Controllers
 {
@@ -9,10 +9,10 @@ namespace Web.Controllers
     [Route("api/[controller]")]
     public class ParticipanteViajeController : ControllerBase
     {
-        private readonly ParticipanteViajeService _service;
+        private readonly IParticipanteViajeService _service;
 
         // Inyectamos el servicio que acabamos de crear
-        public ParticipanteViajeController(ParticipanteViajeService service)
+        public ParticipanteViajeController(IParticipanteViajeService service)
         {
             _service = service;
         }
@@ -33,7 +33,7 @@ namespace Web.Controllers
         }
 
         // GET: api/ParticipanteViaje/viaje/5 (Listar los de un viaje)
-        [HttpGet("viaje/{viajeId}")]
+        [HttpGet("viaje/{viajeId:int}")]
         public async Task<IActionResult> GetPorViaje(int viajeId)
         {
             var participantes = await _service.ObtenerPorViajeAsync(viajeId);
@@ -41,7 +41,7 @@ namespace Web.Controllers
         }
 
         // PUT: api/ParticipanteViaje/5/responder (Modificación de estado)
-        [HttpPut("{id}/responder")]
+        [HttpPut("{id:int}/responder")]
         public async Task<IActionResult> ResponderInvitacion(int id, [FromBody] string nuevoEstado)
         {
             try
@@ -56,7 +56,7 @@ namespace Web.Controllers
         }
 
         // DELETE: api/ParticipanteViaje/5 (Baja)
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             try
