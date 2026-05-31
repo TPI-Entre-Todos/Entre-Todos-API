@@ -487,3 +487,6 @@ src/Web/Web.csproj.lscache
 src/Application/Application.csproj.lscache
 src/Domain/Domain.csproj.lscache
 src/Infrastructure/Infrastructure.csproj.lscache
+
+publish/
+deploy.zip
