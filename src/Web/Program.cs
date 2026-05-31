@@ -12,7 +12,12 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
+// Configuración para despliegue en producción (ej. Heroku)
+if (!builder.Environment.IsDevelopment())
+{
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -91,21 +96,39 @@ builder.Services.Configure<AutenticacionServiceOptions>(builder.Configuration.Ge
 
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
+    context.Database.Migrate();
+}
 
 //Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    // En desarrollo, Swagger está disponible con redirección HTTPS
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "My API V1");
-        options.RoutePrefix = string.Empty;
+    });
+    app.MapOpenApi();
+    app.UseHttpsRedirection();
+}
+else
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
+        context.Database.Migrate();
+    }
+    // En producción, Swagger está disponible pero sin redirección HTTPS
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "My API V1");
     });
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
 app.Run();
