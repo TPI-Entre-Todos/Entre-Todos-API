@@ -5,6 +5,7 @@ namespace Infrastructure.Data
 {
     public class ApplicationContext : DbContext
     {
+        public DbSet<Invitacion> Invitaciones { get; set; }
         public DbSet<Viaje> Viajes { get; set; }
 
         public DbSet<Usuario> Usuarios { get; set; }
