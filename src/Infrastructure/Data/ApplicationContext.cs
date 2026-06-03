@@ -11,6 +11,8 @@ namespace Infrastructure.Data
 
         public DbSet<ParticipanteViaje> ParticipantesViaje { get; set; }
 
+        public DbSet<Pago> Pagos { get; set; }
+
         public ApplicationContext(
             DbContextOptions<ApplicationContext> options)
             : base(options)
