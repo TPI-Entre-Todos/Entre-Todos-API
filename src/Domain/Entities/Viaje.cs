@@ -1,4 +1,7 @@
+using System.Collections.Generic;
+using System;
 namespace Domain.Entities
+
 {
     public class Viaje
     {
@@ -9,6 +12,8 @@ namespace Domain.Entities
         public string Descripcion { get; set; }
         public DateTime FechaCreacion { get; set; }
         public string Moneda { get; set; }
+        public ICollection<ParticipanteViaje> Participantes { get; set; } = new List<ParticipanteViaje>();
+        public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
 
         public Viaje(string nombre, string descripcion, DateTime fechaCreacion, string moneda)
         {

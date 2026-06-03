@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,47 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20260527210849_ParticipanteViaje")]
+    partial class ParticipanteViaje
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
-
-            modelBuilder.Entity("Domain.Entities.Pago", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Comprobante")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("Fecha")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Metodo")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("Monto")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("ParticipanteId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ViajeId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ParticipanteId");
-
-                    b.HasIndex("ViajeId");
-
-                    b.ToTable("Pagos");
-                });
 
             modelBuilder.Entity("Domain.Entities.ParticipanteViaje", b =>
                 {
@@ -145,25 +113,6 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Viajes");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Pago", b =>
-                {
-                    b.HasOne("Domain.Entities.ParticipanteViaje", "Participante")
-                        .WithMany("Pagos")
-                        .HasForeignKey("ParticipanteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.Viaje", "Viaje")
-                        .WithMany("Pagos")
-                        .HasForeignKey("ViajeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Participante");
-
-                    b.Navigation("Viaje");
-                });
-
             modelBuilder.Entity("Domain.Entities.ParticipanteViaje", b =>
                 {
                     b.HasOne("Domain.Entities.Usuario", "Usuario")
@@ -183,11 +132,6 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Viaje");
                 });
 
-            modelBuilder.Entity("Domain.Entities.ParticipanteViaje", b =>
-                {
-                    b.Navigation("Pagos");
-                });
-
             modelBuilder.Entity("Domain.Entities.Usuario", b =>
                 {
                     b.Navigation("ParticipantesViaje");
@@ -195,8 +139,6 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.Viaje", b =>
                 {
-                    b.Navigation("Pagos");
-
                     b.Navigation("Participantes");
                 });
 #pragma warning restore 612, 618
