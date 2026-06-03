@@ -1,6 +1,8 @@
+using Application.Interfaces;
+using Application.Models;
+using Application.Models.Requests;
 using Domain.Entities;
 using Domain.Interfaces;
-
 
 namespace Application.Services
 {
@@ -9,22 +11,32 @@ namespace Application.Services
 
         private readonly IViajeRepository _viajeRepository;
         public ViajeService(IViajeRepository viajeRepository)
-        { _viajeRepository = viajeRepository; }
-        public Viaje Add(Viaje viaje)
         {
-            //viaje.Id = _viajes.Count + 1;
+            _viajeRepository = viajeRepository;
+        }
+
+        public ViajeDto Add(ViajeRequest request)
+        {
+            var viaje = new Viaje(
+                request.Nombre!,
+                request.Descripcion!,
+                request.Moneda!
+            );
+
             _viajeRepository.Add(viaje);
-            return viaje;
+            return ViajeDto.Create(viaje);
         }
 
-        public List<Viaje> Get()
+        public List<ViajeDto> Get()
         {
-            return _viajeRepository.GetAll();
+            var viajes = _viajeRepository.GetAll();
+            return ViajeDto.CreateList(viajes);
         }
 
-        public Viaje GetById(int id)
+        public ViajeDto? GetById(int id)
         {
-            return _viajeRepository.GetById(id);
+            var viaje = _viajeRepository.GetById(id);
+            return viaje == null ? null : ViajeDto.Create(viaje);
         }
 
         public void Delete(int id)

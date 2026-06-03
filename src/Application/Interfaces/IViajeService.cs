@@ -1,11 +1,13 @@
-using Domain.Entities;
-namespace Domain.Interfaces
+using Application.Models;
+using Application.Models.Requests;
+
+namespace Application.Interfaces
 {
     public interface IViajeService
     {
-        Viaje Add(Viaje viaje);
-        List<Viaje> Get();
-        Viaje GetById(int id);
-        public void Delete(int id);
+        ViajeDto Add(ViajeRequest request);
+        List<ViajeDto> Get();
+        ViajeDto? GetById(int id);
+        void Delete(int id);
     }
 }

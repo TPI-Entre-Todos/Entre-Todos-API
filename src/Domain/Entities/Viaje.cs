@@ -15,14 +15,15 @@ namespace Domain.Entities
         public ICollection<ParticipanteViaje> Participantes { get; set; } = new List<ParticipanteViaje>();
         public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
 
-        public Viaje(string nombre, string descripcion, DateTime fechaCreacion, string moneda)
+        public Viaje(string nombre, string descripcion, string moneda)
         {
 
             Nombre = nombre;
             Descripcion = descripcion;
-            FechaCreacion = fechaCreacion;
+            FechaCreacion = DateTime.UtcNow;
             Moneda = moneda;
         }
+
 
     }
 
