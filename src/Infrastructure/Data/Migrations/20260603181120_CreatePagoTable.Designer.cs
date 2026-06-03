@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,53 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20260603181120_CreatePagoTable")]
+    partial class CreatePagoTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
-
-            modelBuilder.Entity("Domain.Entities.Invitacion", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("EmailInvitado")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Estado")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("FechaExpiracion")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("FechaRespuesta")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UsuarioInvitadorId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ViajeId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UsuarioInvitadorId");
-
-                    b.HasIndex("ViajeId");
-
-                    b.ToTable("Invitaciones");
-                });
 
             modelBuilder.Entity("Domain.Entities.Pago", b =>
                 {
@@ -184,25 +146,6 @@ namespace Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Viajes");
-                });
-
-            modelBuilder.Entity("Domain.Entities.Invitacion", b =>
-                {
-                    b.HasOne("Domain.Entities.Usuario", "UsuarioInvitador")
-                        .WithMany()
-                        .HasForeignKey("UsuarioInvitadorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.Viaje", "Viaje")
-                        .WithMany()
-                        .HasForeignKey("ViajeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("UsuarioInvitador");
-
-                    b.Navigation("Viaje");
                 });
 
             modelBuilder.Entity("Domain.Entities.Pago", b =>

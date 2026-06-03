@@ -13,6 +13,7 @@ namespace Domain.Entities
         public DateTime FechaCreacion { get; set; }
         public string Moneda { get; set; }
         public ICollection<ParticipanteViaje> Participantes { get; set; } = new List<ParticipanteViaje>();
+        public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
 
         public Viaje(string nombre, string descripcion, DateTime fechaCreacion, string moneda)
         {

@@ -14,5 +14,6 @@ namespace Domain.Entities
         // Relaciones
         public Usuario Usuario { get; set; }
         public Viaje Viaje { get; set; }
+        public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
     }
 }

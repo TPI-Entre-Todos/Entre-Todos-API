@@ -12,12 +12,14 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Configuración para despliegue en producción (ej. Heroku)
+
+// Configuración para despliegue en producción 
 if (!builder.Environment.IsDevelopment())
 {
     var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 }
+
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -26,9 +28,15 @@ builder.Services.AddScoped<IViajeRepository, ViajeRepository>();
 builder.Services.AddScoped<IViajeService, ViajeService>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IInvitacionRepository, InvitacionRepository>();
+builder.Services.AddScoped<IInvitacionService, InvitacionService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddScoped<IParticipanteViajeRepository, ParticipanteViajeRepository>();
 builder.Services.AddScoped<IParticipanteViajeService, ParticipanteViajeService>();
+
+builder.Services.AddScoped<IPagoRepository, PagoRepository>();
+builder.Services.AddScoped<IPagoService, PagoService>();
 
 // Configuración de la conexión SQLite
 var connection = new SqliteConnection("DataSource = EntreTodos.db");
@@ -81,22 +89,26 @@ builder.Services.AddOpenApi(options =>
 
 
 
-builder.Services.AddAuthentication("Bearer")
-   .AddJwtBearer(options =>
-   {
-       options.TokenValidationParameters = new TokenValidationParameters
-       {
-           ValidateIssuer = true,
-           ValidateAudience = true,
-           ValidateIssuerSigningKey = true,
-           ValidIssuer = builder.Configuration["Authentication:Issuer"],
-           ValidAudience = builder.Configuration["Authentication:Audience"],
-           IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Authentication:SecretForKey"]))
-       };
-   });
+builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Authentication:Issuer"],
+        ValidAudience = builder.Configuration["Authentication:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Authentication:SecretForKey"]))
+    };
+});
 
 builder.Services.Configure<AutenticacionServiceOptions>(builder.Configuration.GetSection("Authentication"));
 
+builder.Services.AddHttpClient("brevoClient", client =>
+            {
+                client.BaseAddress =
+                    new Uri("https://api.brevo.com/v3/");
+            });
 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
@@ -104,7 +116,6 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
     context.Database.Migrate();
 }
-
 //Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -118,15 +129,16 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
-        context.Database.Migrate();
-    }
+    // using (var scope = app.Services.CreateScope())
+    // {
+    //     var context = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
+    //     context.Database.Migrate();
+    // }
     // En producción, Swagger está disponible pero sin redirección HTTPS
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "My API V1");
+
     });
     app.MapOpenApi();
 }
