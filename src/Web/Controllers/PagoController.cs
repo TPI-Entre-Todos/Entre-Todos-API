@@ -23,19 +23,15 @@ namespace Web.Controllers
             if (request == null)
                 return BadRequest("La solicitud no puede ser nula");
 
-            if (request.ParticipanteId <= 0 || request.ViajeId <= 0 || request.Monto <= 0)
-                return BadRequest("ParticipanteId, ViajeId y Monto deben ser válidos");
-
-            if (string.IsNullOrEmpty(request.Metodo))
-                return BadRequest("El método de pago es requerido");
-
             try
             {
+                // Dejamos que el servicio haga todo el trabajo sucio de validar
                 var result = _pagoService.Add(request);
                 return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
             }
             catch (ArgumentException ex)
             {
+                // Si el servicio encuentra un error, lo atrapamos acá y devolvemos el mensaje real
                 return BadRequest(ex.Message);
             }
         }
