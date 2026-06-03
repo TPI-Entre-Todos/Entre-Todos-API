@@ -29,27 +29,31 @@ namespace Application.Services
 
         public PagoDto Add(PagoRequest request)
         {
-            ValidarPago(request);
+            ValidarPagoParaCreacion(request);
             
-            Pago pago = new(request.ParticipanteId, request.ViajeId, request.Monto, request.Metodo, request.Comprobante);
+            // Usamos request.Monto.Value porque ya sabemos que no es nulo gracias a la validación
+            Pago pago = new(request.ParticipanteId, request.ViajeId, request.Monto.Value, request.Metodo, request.Comprobante);
             _pagoRepository.Add(pago);
             return PagoDto.Create(pago);
         }
 
         public PagoDto Update(int id, PagoRequest request)
         {
-            ValidarPago(request);
-            
             Pago existing = _pagoRepository.GetById(id);
             if (existing == null)
                 return null;
 
+            // Validamos solo los datos que el usuario está intentando modificar
             if (request.ParticipanteId > 0)
                 existing.ParticipanteId = request.ParticipanteId;
             if (request.ViajeId > 0)
                 existing.ViajeId = request.ViajeId;
-            if (request.Monto > 0)
-                existing.Monto = request.Monto;
+            if (request.Monto.HasValue)
+            {
+                if (request.Monto.Value <= 0) 
+                    throw new ArgumentException("El monto debe ser mayor a 0");
+                existing.Monto = request.Monto.Value;
+            }
             if (!string.IsNullOrEmpty(request.Metodo))
                 existing.Metodo = request.Metodo;
             if (!string.IsNullOrEmpty(request.Comprobante))
@@ -75,17 +79,14 @@ namespace Application.Services
             return PagoDto.CreateList(pagos);
         }
 
-        private void ValidarPago(PagoRequest request)
+        private void ValidarPagoParaCreacion(PagoRequest request)
         {
             if (request.ParticipanteId <= 0)
                 throw new ArgumentException("ParticipanteId debe ser válido");
-
             if (request.ViajeId <= 0)
                 throw new ArgumentException("ViajeId debe ser válido");
-
-            if (request.Monto <= 0)
-                throw new ArgumentException("El monto debe ser mayor a 0");
-
+            if (!request.Monto.HasValue || request.Monto.Value <= 0)
+                throw new ArgumentException("El monto es requerido y debe ser mayor a 0");
             if (string.IsNullOrEmpty(request.Metodo))
                 throw new ArgumentException("El método de pago es requerido");
         }
