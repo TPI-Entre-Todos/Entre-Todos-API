@@ -32,23 +32,29 @@ namespace Application.Services
 
         public InvitacionDto Add(InvitacionRequest request)
         {
-            var invitacion = new Invitacion(request.ViajeId, request.UsuarioInvitadorId, request.EmailInvitado, request.FechaExpiracion);
-
-            _invitacionRepository.Add(invitacion);
             // Enviar email de invitación en segundo plano (no bloquear)
             try
             {
+                var invitacion = new Invitacion(request.ViajeId, request.UsuarioInvitadorId, request.EmailInvitado, request.FechaExpiracion);
+
+                _invitacionRepository.Add(invitacion);
                 var subject = $"Invitación al viaje #{invitacion.ViajeId}";
                 var link = $"/invitaciones/accept?token={invitacion.Token}";
                 var html = $"<p>Has sido invitado al viaje #{invitacion.ViajeId}.</p><p>Usá este token: <strong>{invitacion.Token}</strong></p><p>Link: <a href=\"{link}\">Aceptar invitación</a></p>";
                 _ = Task.Run(async () => await _emailService.EnviarEmailAsync(invitacion.EmailInvitado, subject, html));
+
+                return InvitacionDto.Create(invitacion);
             }
             catch
             {
-                // No bloquear la creación por fallas en el envío de email
+                return BadRequest("Error al enviar el email de invitación. Por favor, intentá nuevamente.");
             }
 
-            return InvitacionDto.Create(invitacion);
+        }
+
+        private InvitacionDto BadRequest(string v)
+        {
+            throw new NotImplementedException();
         }
 
         public void Delete(int id)
