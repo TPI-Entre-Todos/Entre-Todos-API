@@ -110,7 +110,6 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
     context.Database.Migrate();
 }
-
 //Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -124,11 +123,11 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
-        context.Database.Migrate();
-    }
+    // using (var scope = app.Services.CreateScope())
+    // {
+    //     var context = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
+    //     context.Database.Migrate();
+    // }
     // En producción, Swagger está disponible pero sin redirección HTTPS
     app.UseSwaggerUI(options =>
     {
