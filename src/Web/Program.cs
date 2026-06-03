@@ -8,6 +8,7 @@ using Infrastructure.Services;
 using Microsoft.OpenApi;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,12 +32,12 @@ builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IInvitacionRepository, InvitacionRepository>();
 builder.Services.AddScoped<IInvitacionService, InvitacionService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-
 builder.Services.AddScoped<IParticipanteViajeRepository, ParticipanteViajeRepository>();
 builder.Services.AddScoped<IParticipanteViajeService, ParticipanteViajeService>();
-
 builder.Services.AddScoped<IPagoRepository, PagoRepository>();
 builder.Services.AddScoped<IPagoService, PagoService>();
+builder.Services.AddScoped<IGastoRepository, GastoRepository>();
+builder.Services.AddScoped<GastoService>();
 
 // Configuración de la conexión SQLite
 var connection = new SqliteConnection("DataSource = EntreTodos.db");
