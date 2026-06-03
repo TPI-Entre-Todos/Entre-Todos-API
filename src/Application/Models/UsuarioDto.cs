@@ -18,6 +18,7 @@ public class UsuarioDto
         dto.Nombre = usuario.Nombre;
         dto.Email = usuario.Email;
         dto.Rol = usuario.Rol;
+        dto.FechaRegistro = usuario.FechaRegistro;
         return dto;
     }
 
