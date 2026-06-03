@@ -1,8 +1,9 @@
-using Application.Services;
-using Domain.Entities;
-using Domain.Interfaces;
+using Application.Interfaces;
+using Application.Models;
+using Application.Models.Requests;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+
 namespace Web.Controllers
 {
     [ApiController]
@@ -18,10 +19,13 @@ namespace Web.Controllers
         }
 
         [HttpPost]
-        public IActionResult Add(Viaje viaje)
+        public IActionResult Add([FromBody] ViajeRequest request)
         {
-            var result = _viajeService.Add(viaje);
-            return CreatedAtAction(nameof(Get), result);
+            if (request == null)
+                return BadRequest();
+
+            var result = _viajeService.Add(request);
+            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
         [HttpGet]
@@ -33,9 +37,13 @@ namespace Web.Controllers
         [HttpGet("{id:int}")]
         public IActionResult GetById([FromRoute] int id)
         {
-            var viajes = _viajeService.GetById(id);
-            return Ok(viajes);
+            var viaje = _viajeService.GetById(id);
+            if (viaje == null)
+                return NotFound();
+
+            return Ok(viaje);
         }
+
         [HttpDelete("{id:int}")]
         public IActionResult Delete([FromRoute] int id)
         {
