@@ -9,6 +9,8 @@ namespace Application.Interfaces
         List<InvitacionDto> GetAll();
         InvitacionDto? GetById(int id);
         InvitacionDto Add(InvitacionRequest request);
+        InvitacionDto AceptarInvitacion(string token, int usuarioId);
+        InvitacionDto RechazarInvitacion(string token);
         void Delete(int id);
     }
 }
