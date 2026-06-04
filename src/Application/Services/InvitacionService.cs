@@ -72,16 +72,10 @@ namespace Application.Services
             if (participanteExistente != null)
                 throw new Exception("El usuario ya se encuentra registrado en el viaje.");
 
-            var participante = new ParticipanteViaje
-            {
-                UsuarioId = usuarioId,
-                ViajeId = invitacion.ViajeId,
-                EsOrganizador = false,
-                SaldoTotal = 0,
-                FechaIngreso = DateTime.UtcNow,
-                Estado = "Activo",
-                EstadoInvitacion = "Aceptada"
-            };
+            var participante = new ParticipanteViaje(usuarioId, invitacion.ViajeId, false);
+            // participante.SaldoTotal = 0;
+            // participante.FechaIngreso = DateTime.UtcNow;
+            // participante.Estado = "Activo";
 
             _participanteRepository.Add(participante);
 

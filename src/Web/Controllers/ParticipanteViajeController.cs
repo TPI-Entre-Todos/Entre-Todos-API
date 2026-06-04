@@ -19,11 +19,11 @@ namespace Web.Controllers
 
         // POST: api/ParticipanteViaje (Alta / Invitar)
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] ParticipanteViajeCreateDto dto)
+        public IActionResult Add([FromBody] ParticipanteViajeCreateRequest Request)
         {
             try
             {
-                var resultado = await _service.RegistrarParticipanteAsync(dto);
+                var resultado = _service.RegistrarParticipante(Request);
                 return Ok(resultado);
             }
             catch (Exception ex)
@@ -34,34 +34,26 @@ namespace Web.Controllers
 
         // GET: api/ParticipanteViaje/viaje/5 (Listar los de un viaje)
         [HttpGet("viaje/{viajeId:int}")]
-        public async Task<IActionResult> GetPorViaje(int viajeId)
+        public IActionResult GetPorViaje(int viajeId)
         {
-            var participantes = await _service.ObtenerPorViajeAsync(viajeId);
+            var participantes = _service.ObtenerPorViaje(viajeId);
             return Ok(participantes);
         }
 
-        // PUT: api/ParticipanteViaje/5/responder (Modificación de estado)
-        [HttpPut("{id:int}/responder")]
-        public async Task<IActionResult> ResponderInvitacion(int id, [FromBody] string nuevoEstado)
+        // GET: api/ParticipanteViaje (Listar todos los participantes)
+        [HttpGet]
+        public IActionResult GetAll()
         {
-            try
-            {
-                await _service.ResponderInvitacionAsync(id, nuevoEstado);
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var participantes = _service.ObtenerTodos();
+            return Ok(participantes);
         }
-
         // DELETE: api/ParticipanteViaje/5 (Baja)
         [HttpDelete("{id:int}")]
-        public async Task<IActionResult> Delete(int id)
+        public IActionResult Delete(int id)
         {
             try
             {
-                await _service.EliminarParticipanteAsync(id);
+                _service.EliminarParticipante(id);
                 return NoContent();
             }
             catch (Exception ex)

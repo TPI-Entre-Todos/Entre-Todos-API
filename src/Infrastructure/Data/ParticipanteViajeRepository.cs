@@ -15,14 +15,6 @@ namespace Infrastructure.Data
         }
 
         // Obtiene todos los participantes de un viaje en particular
-        public async Task<List<ParticipanteViaje>> GetByViajeIdAsync(int viajeId)
-        {
-            return await _context.ParticipantesViaje
-                .Include(pv => pv.Usuario) // Trae los datos del Usuario asociado
-                .Where(pv => pv.ViajeId == viajeId)
-                .ToListAsync();
-        }
-
         public List<ParticipanteViaje> GetByViajeId(int viajeId)
         {
             return _context.ParticipantesViaje
@@ -31,27 +23,22 @@ namespace Infrastructure.Data
                 .ToList();
         }
 
-        // Busca si un usuario ya pertenece a un viaje (sirve para evitar duplicados)
-        public async Task<ParticipanteViaje?> GetByIdsAsync(int usuarioId, int viajeId)
+        // Obtiene todos los participantes
+        public List<ParticipanteViaje> ObtenerTodos()
         {
-            return await _context.ParticipantesViaje
-                .FirstOrDefaultAsync(pv => pv.UsuarioId == usuarioId && pv.ViajeId == viajeId);
+            return _context.ParticipantesViaje
+                .Include(pv => pv.Usuario)
+                .ToList();
         }
 
+        // Busca si un usuario ya pertenece a un viaje (sirve para evitar duplicados)
         public ParticipanteViaje? GetByIds(int usuarioId, int viajeId)
         {
             return _context.ParticipantesViaje
+                .Include(pv => pv.Usuario)
                 .FirstOrDefault(pv => pv.UsuarioId == usuarioId && pv.ViajeId == viajeId);
         }
-
         // Busca un participante por su ID único
-        public async Task<ParticipanteViaje?> GetByIdAsync(int id)
-        {
-            return await _context.ParticipantesViaje
-                .Include(pv => pv.Usuario)
-                .FirstOrDefaultAsync(pv => pv.Id == id);
-        }
-
         public ParticipanteViaje? GetById(int id)
         {
             return _context.ParticipantesViaje
@@ -60,12 +47,6 @@ namespace Infrastructure.Data
         }
 
         // Guarda un nuevo participante en la base de datos (Alta)
-        public async Task<ParticipanteViaje> AddAsync(ParticipanteViaje entity)
-        {
-            await _context.ParticipantesViaje.AddAsync(entity);
-            await _context.SaveChangesAsync();
-            return entity;
-        }
 
         public ParticipanteViaje Add(ParticipanteViaje entity)
         {
@@ -75,27 +56,12 @@ namespace Infrastructure.Data
         }
 
         // Actualiza los datos del participante (Modificación, ej: aceptar invitación o cambiar saldo)
-        public async Task UpdateAsync(ParticipanteViaje entity)
-        {
-            _context.ParticipantesViaje.Update(entity);
-            await _context.SaveChangesAsync();
-        }
+
 
         public void Update(ParticipanteViaje entity)
         {
             _context.ParticipantesViaje.Update(entity);
             _context.SaveChanges();
-        }
-
-        // Borra un participante de la base de datos (Baja)
-        public async Task DeleteAsync(int id)
-        {
-            var entity = await GetByIdAsync(id);
-            if (entity != null)
-            {
-                _context.ParticipantesViaje.Remove(entity);
-                await _context.SaveChangesAsync();
-            }
         }
 
         public void Delete(int id)
