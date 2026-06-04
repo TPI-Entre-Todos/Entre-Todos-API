@@ -2,6 +2,7 @@ using Application.Interfaces;
 using Application.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Web.Controllers
 {
@@ -25,6 +26,44 @@ namespace Web.Controllers
 
             var result = _invitacionService.Add(request);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+        }
+
+        [HttpPut("{token}/aceptar")]
+        public IActionResult AceptarInvitacion([FromRoute] string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                return BadRequest("Token inválido.");
+
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(claim) || !int.TryParse(claim, out var usuarioId))
+                return Unauthorized();
+
+            try
+            {
+                var result = _invitacionService.AceptarInvitacion(token, usuarioId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("{token}/rechazar")]
+        public IActionResult RechazarInvitacion([FromRoute] string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                return BadRequest("Token inválido.");
+
+            try
+            {
+                var result = _invitacionService.RechazarInvitacion(token);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet]
