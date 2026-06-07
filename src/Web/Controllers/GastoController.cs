@@ -10,14 +10,16 @@ namespace Web.Controllers
     [Route("api/[controller]")]
     public class GastoController : ControllerBase
     {
-        private readonly GastoService _gastoService;
+        // 👇 Cambiamos GastoService por IGastoService
+        private readonly IGastoService _gastoService;
 
-        public GastoController(GastoService gastoService)
+        // 👇 Acá también cambiamos el parámetro por IGastoService
+        public GastoController(IGastoService gastoService)
         {
             _gastoService = gastoService;
         }
 
-        // POST: api/Gasto
+       
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] GastoCreateDto dto)
         {
@@ -32,7 +34,6 @@ namespace Web.Controllers
             }
         }
 
-        // GET: api/Gasto/viaje/5
         [HttpGet("viaje/{viajeId}")]
         public async Task<IActionResult> GetPorViaje(int viajeId)
         {
@@ -47,7 +48,6 @@ namespace Web.Controllers
             }
         }
 
-        // DELETE: api/Gasto/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
