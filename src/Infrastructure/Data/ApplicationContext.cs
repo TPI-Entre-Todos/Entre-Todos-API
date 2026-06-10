@@ -15,6 +15,8 @@ namespace Infrastructure.Data
         public DbSet<Pago> Pagos { get; set; }
         public DbSet<Gasto> Gastos { get; set; }
 
+        public DbSet<Notificacion> Notificaciones { get; set; }
+
         public ApplicationContext(
             DbContextOptions<ApplicationContext> options)
             : base(options)
