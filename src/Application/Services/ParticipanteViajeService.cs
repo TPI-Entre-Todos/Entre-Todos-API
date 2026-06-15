@@ -57,5 +57,15 @@ namespace Application.Services
 
             _repository.Delete(id);
         }
+        public void VerificarOrganizador(int usuarioId, int viajeId)
+        {
+            var participante = _repository.GetByIds(usuarioId, viajeId);
+            if (participante == null)
+                throw new Exception("No pertenece a este viaje.");
+
+            if (!participante.EsOrganizador)
+                throw new Exception("Solo el organizador puede hacer esta acción.");
+        }
+
     }
 }

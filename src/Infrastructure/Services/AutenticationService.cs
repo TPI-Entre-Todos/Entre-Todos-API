@@ -46,7 +46,8 @@ namespace Infrastructure.Services
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Name, user.Nombre)
+                    new Claim(ClaimTypes.Name, user.Nombre),
+                    new Claim(ClaimTypes.Role, user.Rol.ToString())
                 };
                 var jwtToken = new JwtSecurityToken(
                     issuer: _options.Issuer,

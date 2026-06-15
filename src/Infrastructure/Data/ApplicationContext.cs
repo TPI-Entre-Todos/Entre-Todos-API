@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Domain.Enums;
 
 namespace Infrastructure.Data
 {
@@ -27,6 +28,15 @@ namespace Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Usuario>().HasData(CreateUsuarioSeed());
+        }
+        private Usuario[] CreateUsuarioSeed()
+        {
+            return new[]
+            {
+                    new Usuario { Id = 1, Nombre="Admin", Email="admin@entretodos.com",Password="Admin123!", FechaRegistro= new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc), Rol= Rol.Admin }
+            };
         }
     }
+
 }

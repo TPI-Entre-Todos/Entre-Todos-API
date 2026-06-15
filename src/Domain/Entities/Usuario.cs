@@ -24,6 +24,10 @@ namespace Domain.Entities
 
         }
 
+        public Usuario()
+        {
+
+        }
     }
 }
 
