@@ -2,19 +2,17 @@ using Application.Interfaces;
 using Application.Services;
 using Domain.Interfaces;
 using Infrastructure.Data;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Infrastructure.Services;
 using Microsoft.OpenApi;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Application;
-
 var builder = WebApplication.CreateBuilder(args);
 
 
- 
-if (!builder.Environment.IsDevelopment())
+
+if (builder.Environment.IsProduction())
 {
     var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
@@ -41,16 +39,15 @@ builder.Services.AddScoped<IGastoService, GastoService>();
 builder.Services.AddScoped<INotificacionRepository, NotificacionRepository>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();
 
-var connection = new SqliteConnection("DataSource = EntreTodos.db");
-connection.Open();
+
 
 // journal mode
-using (var command = connection.CreateCommand())
-{
-    command.CommandText = "PRAGMA journal_mode = DELETE;";
-    command.ExecuteNonQuery();
-}
-builder.Services.AddDbContext<ApplicationContext>(dbContextOptions => dbContextOptions.UseSqlite(connection));
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException(
+        "Connection string 'DefaultConnection' no encontrada.");
+
+builder.Services.AddDbContext<ApplicationContext>(options =>
+options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 builder.Services.AddOpenApi(options =>
 {
@@ -62,7 +59,7 @@ builder.Services.AddOpenApi(options =>
         var securityScheme = new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.Http,
-            Scheme = "bearer", 
+            Scheme = "bearer",
             BearerFormat = "JWT",
             Description = "Acá pegar el token generado al loguearse."
         };
@@ -75,7 +72,7 @@ builder.Services.AddOpenApi(options =>
 
         var requirement = new OpenApiSecurityRequirement
         {
-            [schemeReference] = [] 
+            [schemeReference] = []
         };
 
         document.Security = new List<OpenApiSecurityRequirement> { requirement };
@@ -126,7 +123,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
- 
+
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "My API V1");
