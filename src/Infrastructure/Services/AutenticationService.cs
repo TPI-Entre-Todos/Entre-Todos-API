@@ -27,9 +27,10 @@ namespace Infrastructure.Services
                 return null;
 
             var user = _usuarioRepository.GetUserByEmail(authenticationRequest.Email);
-
             if (user == null) return null;
-
+            // ✅ Validar que la contraseña coincida
+            if (user.Password != authenticationRequest.Password)
+                return null;
             return user;
 
         }

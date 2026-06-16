@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Application.Interfaces;
 using Application.Models;
+using Microsoft.AspNetCore.Authorization;
 namespace Web.Controllers
 {
     [ApiController]
@@ -42,6 +43,7 @@ namespace Web.Controllers
 
         // GET: api/ParticipanteViaje (Listar todos los participantes)
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult GetAll()
         {
             var participantes = _service.ObtenerTodos();
