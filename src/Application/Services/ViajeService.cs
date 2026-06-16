@@ -10,9 +10,12 @@ namespace Application.Services
     {
 
         private readonly IViajeRepository _viajeRepository;
-        public ViajeService(IViajeRepository viajeRepository)
+
+        private readonly IParticipanteViajeRepository _participanteViajeRepository;
+        public ViajeService(IViajeRepository viajeRepository, IParticipanteViajeRepository participanteViajeRepository)
         {
             _viajeRepository = viajeRepository;
+            _participanteViajeRepository = participanteViajeRepository;
         }
 
         public ViajeDto Add(ViajeRequest request)
@@ -29,6 +32,7 @@ namespace Application.Services
 
         public List<ViajeDto> Get()
         {
+
             var viajes = _viajeRepository.GetAll();
             return ViajeDto.CreateList(viajes);
         }

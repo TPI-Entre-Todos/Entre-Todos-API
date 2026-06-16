@@ -7,7 +7,7 @@ namespace Application.Interfaces
     public interface IParticipanteViajeService
     {
         ParticipanteViajeDto RegistrarParticipante(ParticipanteViajeCreateRequest dto);
-        List<ParticipanteViajeDto> ObtenerPorViaje(int viajeId);
+        List<ParticipanteViajeDto> ObtenerPorViaje(int viajeId, int usuarioId);
         List<ParticipanteViajeDto> ObtenerTodos();
         void EliminarParticipante(int id);
 
