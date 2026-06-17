@@ -42,11 +42,22 @@ namespace Application.Services
             return ParticipanteViajeDto.CreateList(lista);
         }
 
-        // CONSULTA: Obtener todos los participantes
-        public List<ParticipanteViajeDto> ObtenerTodos()
+        public List<ParticipanteViajeDto> ObtenerPorViajeAdmin(int viajeId)
         {
+            var lista = _repository.GetByViajeId(viajeId);
+            return ParticipanteViajeDto.CreateList(lista);
+        }
 
-            var lista = _repository.ObtenerTodos();
+
+        // CONSULTA: Obtener todos los participantes
+        public List<ParticipanteViajeDto> ObtenerTodos(int usuarioId, bool esAdmin)
+        {
+            List<ParticipanteViaje> lista;
+            if (esAdmin)
+                lista = _repository.ObtenerTodos();
+            else
+                lista = _repository.GetByUsuarioId(usuarioId);
+
             return ParticipanteViajeDto.CreateList(lista);
         }
 
@@ -61,15 +72,5 @@ namespace Application.Services
 
             _repository.Delete(id);
         }
-        // public void VerificarOrganizador(int usuarioId, int viajeId)
-        // {
-        //     var participante = _repository.GetByIds(usuarioId, viajeId);
-        //     if (participante == null)
-        //         throw new Exception("No pertenece a este viaje.");
-
-        //     if (!participante.EsOrganizador)
-        //         throw new Exception("Solo el organizador puede hacer esta acción.");
-        // }
-
     }
 }

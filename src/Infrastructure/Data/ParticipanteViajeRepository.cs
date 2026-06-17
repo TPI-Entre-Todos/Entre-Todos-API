@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace Infrastructure.Data
 {
@@ -28,6 +29,15 @@ namespace Infrastructure.Data
         {
             return _context.ParticipantesViaje
                 .Include(pv => pv.Usuario)
+                .ToList();
+        }
+
+        // Obtiene los participantes asociados a un usuario
+        public List<ParticipanteViaje> GetByUsuarioId(int usuarioId)
+        {
+            return _context.ParticipantesViaje
+                .Include(pv => pv.Usuario)
+                .Where(pv => pv.UsuarioId == usuarioId)
                 .ToList();
         }
 

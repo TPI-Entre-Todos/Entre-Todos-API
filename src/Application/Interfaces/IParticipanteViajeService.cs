@@ -8,7 +8,9 @@ namespace Application.Interfaces
     {
         ParticipanteViajeDto RegistrarParticipante(ParticipanteViajeCreateRequest dto);
         List<ParticipanteViajeDto> ObtenerPorViaje(int viajeId, int usuarioId);
-        List<ParticipanteViajeDto> ObtenerTodos();
+
+        List<ParticipanteViajeDto> ObtenerPorViajeAdmin(int viajeId);
+        List<ParticipanteViajeDto> ObtenerTodos(int usuarioId, bool esAdmin);
         void EliminarParticipante(int id);
 
     }
