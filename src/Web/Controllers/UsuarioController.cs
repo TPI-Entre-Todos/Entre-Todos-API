@@ -12,11 +12,10 @@ namespace Web.Controllers
     {
 
         private readonly IUsuarioService _usuarioService;
-        private readonly IEmailService _emailService;
-        public UsuarioController(IUsuarioService usuarioService, IEmailService emailService)
+
+        public UsuarioController(IUsuarioService usuarioService)
         {
             _usuarioService = usuarioService;
-            _emailService = emailService;
         }
 
         [AllowAnonymous]
