@@ -18,7 +18,7 @@ namespace Application.Services
             _participanteViajeRepository = participanteViajeRepository;
         }
 
-        public ViajeDto Add(ViajeRequest request)
+        public ViajeDto Add(ViajeRequest request, int userIdClaim)
         {
             var viaje = new Viaje(
                 request.Nombre!,
@@ -27,6 +27,10 @@ namespace Application.Services
             );
 
             _viajeRepository.Add(viaje);
+
+            var participante = new ParticipanteViaje(userIdClaim, viaje.Id, true);
+            _participanteViajeRepository.Add(participante);
+
             return ViajeDto.Create(viaje);
         }
 

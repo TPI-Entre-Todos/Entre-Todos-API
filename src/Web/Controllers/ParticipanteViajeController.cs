@@ -22,6 +22,7 @@ namespace Web.Controllers
 
         // POST: api/ParticipanteViaje (Alta / Invitar)
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public IActionResult Add([FromBody] ParticipanteViajeCreateRequest Request)
         {
             try
@@ -39,13 +40,11 @@ namespace Web.Controllers
         [HttpGet("viaje/{viajeId:int}")]
         public IActionResult GetPorViaje(int viajeId)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userIdClaim == null) return Unauthorized();
-            if (!int.TryParse(userIdClaim, out var userId)) return Unauthorized();
+            int userIdClaim = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             try
             {
-                var participantes = _service.ObtenerPorViaje(viajeId, userId);
+                var participantes = _service.ObtenerPorViaje(viajeId, userIdClaim);
                 return Ok(participantes);
             }
 

@@ -5,7 +5,7 @@ namespace Application.Interfaces
 {
     public interface IViajeService
     {
-        ViajeDto Add(ViajeRequest request);
+        ViajeDto Add(ViajeRequest request, int userIdClaim);
         List<ViajeDto> Get();
         ViajeDto? GetById(int id);
         void Delete(int id);

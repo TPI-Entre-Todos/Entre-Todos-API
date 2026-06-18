@@ -1,5 +1,4 @@
 using Application.Interfaces;
-using Application.Models;
 using Application.Models.Requests;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -22,10 +21,8 @@ namespace Web.Controllers
         [HttpPost]
         public IActionResult Add([FromBody] ViajeRequest request)
         {
-            if (request == null)
-                return BadRequest();
-
-            var result = _viajeService.Add(request);
+            int userIdClaim = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = _viajeService.Add(request, userIdClaim);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
