@@ -20,7 +20,7 @@ public class PagoDto
         var dto = new PagoDto
         {
             Id = pago.Id,
-            ParticipanteId = pago.ParticipanteId,
+            ParticipanteId = pago.RemitenteId,
             ViajeId = pago.ViajeId,
             Monto = pago.Monto,
             Fecha = pago.Fecha,

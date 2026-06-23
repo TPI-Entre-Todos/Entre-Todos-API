@@ -3,6 +3,8 @@ using Domain.Interfaces;
 using Application.Interfaces;
 using Application.Models.Requests;
 using Application.Models;
+using System;
+using System.Collections.Generic;
 
 namespace Application.Services
 {
@@ -31,8 +33,16 @@ namespace Application.Services
         {
             ValidarPagoParaCreacion(request);
             
-            // Usamos request.Monto.Value porque ya sabemos que no es nulo gracias a la validación
-            Pago pago = new(request.ParticipanteId, request.ViajeId, request.Monto.Value, request.Metodo, request.Comprobante);
+            // Usamos el constructor actualizado de la entidad Pago (RemitenteId, DestinatarioId, ViajeId, Monto, Metodo, Comprobante)
+            Pago pago = new Pago(
+                request.ParticipanteId, // Remitente
+                request.ParticipanteId, // Destinatario (Temporalmente el mismo hasta mapear DestinatarioId en PagoRequest)
+                request.ViajeId, 
+                request.Monto.Value, 
+                request.Metodo, 
+                request.Comprobante
+            );
+
             _pagoRepository.Add(pago);
             return PagoDto.Create(pago);
         }
@@ -45,9 +55,11 @@ namespace Application.Services
 
             // Validamos solo los datos que el usuario está intentando modificar
             if (request.ParticipanteId > 0)
-                existing.ParticipanteId = request.ParticipanteId;
+                existing.RemitenteId = request.ParticipanteId; // 👈 Corregido: propiedad de la entidad actualizada
+                
             if (request.ViajeId > 0)
                 existing.ViajeId = request.ViajeId;
+                
             if (request.Monto.HasValue)
             {
                 if (request.Monto.Value <= 0) 
