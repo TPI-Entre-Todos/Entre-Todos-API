@@ -14,7 +14,7 @@ namespace Domain.Entities
         public string Moneda { get; set; }
         public ICollection<ParticipanteViaje> Participantes { get; set; } = new List<ParticipanteViaje>();
         public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
-
+        public ICollection<Gasto> Gastos { get; set; } = new List<Gasto>();
         public Viaje(string nombre, string descripcion, string moneda)
         {
 
@@ -24,7 +24,7 @@ namespace Domain.Entities
             Moneda = moneda;
         }
 
-
+        public Viaje() { }
     }
 
 }

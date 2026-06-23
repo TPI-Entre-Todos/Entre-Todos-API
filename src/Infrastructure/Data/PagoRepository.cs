@@ -2,6 +2,8 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Infrastructure.Data;
 
@@ -17,7 +19,8 @@ public class PagoRepository : IPagoRepository
     public List<Pago> GetAll()
     {
         return _context.Pagos
-            .Include(p => p.Participante)
+            .Include(p => p.Remitente)       // 👈 Corregido
+            .Include(p => p.Destinatario)    // 👈 Agregado para traer el circuito completo
             .Include(p => p.Viaje)
             .ToList();
     }
@@ -25,7 +28,8 @@ public class PagoRepository : IPagoRepository
     public Pago GetById(int id)
     {
         return _context.Pagos
-            .Include(p => p.Participante)
+            .Include(p => p.Remitente)       // 👈 Corregido
+            .Include(p => p.Destinatario)    // 👈 Agregado
             .Include(p => p.Viaje)
             .FirstOrDefault(p => p.Id == id);
     }
@@ -45,7 +49,8 @@ public class PagoRepository : IPagoRepository
             return null;
         }
 
-        existing.ParticipanteId = entity.ParticipanteId;
+        existing.RemitenteId = entity.RemitenteId;       // 👈 Corregido
+        existing.DestinatarioId = entity.DestinatarioId; // 👈 Agregado
         existing.ViajeId = entity.ViajeId;
         existing.Monto = entity.Monto;
         existing.Fecha = entity.Fecha;
@@ -69,7 +74,8 @@ public class PagoRepository : IPagoRepository
     public List<Pago> GetByViajeId(int viajeId)
     {
         return _context.Pagos
-            .Include(p => p.Participante)
+            .Include(p => p.Remitente)       // 👈 Corregido
+            .Include(p => p.Destinatario)    // 👈 Agregado
             .Include(p => p.Viaje)
             .Where(p => p.ViajeId == viajeId)
             .ToList();
@@ -78,9 +84,10 @@ public class PagoRepository : IPagoRepository
     public List<Pago> GetByParticipanteId(int participanteId)
     {
         return _context.Pagos
-            .Include(p => p.Participante)
+            .Include(p => p.Remitente)       // 👈 Corregido
+            .Include(p => p.Destinatario)    // 👈 Agregado
             .Include(p => p.Viaje)
-            .Where(p => p.ParticipanteId == participanteId)
+            .Where(p => p.RemitenteId == participanteId) // 👈 Corregido para buscar por el que envió el pago
             .ToList();
     }
 }

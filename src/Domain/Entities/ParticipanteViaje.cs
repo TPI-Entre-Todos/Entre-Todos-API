@@ -1,5 +1,6 @@
+using System;
+using System.Collections.Generic;
 
-using Domain.Enums;
 namespace Domain.Entities
 {
     public class ParticipanteViaje
@@ -12,10 +13,17 @@ namespace Domain.Entities
         public DateTime FechaIngreso { get; set; }
         public string Estado { get; set; }
 
-        // Relaciones
+        // Relaciones base
         public Usuario? Usuario { get; set; }
         public Viaje? Viaje { get; set; }
-        public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
+
+        // Relaciones cruzadas de Gastos y Detalles
+        public ICollection<Gasto> GastosPagados { get; set; } = new List<Gasto>();
+        public ICollection<DetalleGasto> DetallesGastoDebido { get; set; } = new List<DetalleGasto>();
+
+        // Relaciones cruzadas de Pagos Directos
+        public ICollection<Pago> PagosRealizados { get; set; } = new List<Pago>(); // Soluciona error 1
+        public ICollection<Pago> PagosRecibidos { get; set; } = new List<Pago>();  // Soluciona error 2
 
         public ParticipanteViaje(int usuarioId, int viajeId, bool esOrganizador)
         {
@@ -27,8 +35,6 @@ namespace Domain.Entities
             Estado = "Activo";
         }
 
-
-
-
+        public ParticipanteViaje() { }
     }
 }

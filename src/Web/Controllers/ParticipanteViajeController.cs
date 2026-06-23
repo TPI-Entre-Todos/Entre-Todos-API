@@ -38,6 +38,7 @@ namespace Web.Controllers
 
         // GET: api/ParticipanteViaje/viaje/5 (Listar los de un viaje de usario)
         [HttpGet("viaje/{viajeId:int}")]
+        [Authorize(Roles = "User")]
         public IActionResult GetPorViaje(int viajeId)
         {
             int userIdClaim = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);

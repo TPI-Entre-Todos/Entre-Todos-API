@@ -11,8 +11,8 @@ namespace Domain.Entities
         public decimal Monto { get; set; }
         public DateTime Fecha { get; set; }
 
-        // Propiedades de navegación (por si EF las necesita)
         public Viaje Viaje { get; set; }
         public ParticipanteViaje Participante { get; set; }
+        public ICollection<DetalleGasto> DetallesGasto { get; set; } = new List<DetalleGasto>();
     }
 }

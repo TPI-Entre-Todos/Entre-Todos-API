@@ -40,6 +40,8 @@ builder.Services.AddScoped<IGastoRepository, GastoRepository>();
 builder.Services.AddScoped<IGastoService, GastoService>();
 builder.Services.AddScoped<INotificacionRepository, NotificacionRepository>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();
+builder.Services.AddScoped<IDetalleGastoRepository, DetalleGastoRepository>();
+builder.Services.AddScoped<IDetalleGastoService, DetalleGastoService>();
 
 var connection = new SqliteConnection("DataSource = EntreTodos.db");
 connection.Open();
