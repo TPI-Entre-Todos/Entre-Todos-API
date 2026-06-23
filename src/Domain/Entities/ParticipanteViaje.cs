@@ -15,7 +15,8 @@ namespace Domain.Entities
         // Relaciones
         public Usuario? Usuario { get; set; }
         public Viaje? Viaje { get; set; }
-        public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
+        public ICollection<Pago> PagosRealizados { get; set; } = new List<Pago>(); // Pagos que yo envié
+        public ICollection<Pago> PagosRecibidos { get; set; } = new List<Pago>();  // Pagos que yo cobré
 
         public ParticipanteViaje(int usuarioId, int viajeId, bool esOrganizador)
         {
