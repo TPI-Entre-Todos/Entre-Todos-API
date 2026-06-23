@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Application.Interfaces;
 using Application.Models;
 using Domain.Entities;
 using Domain.Interfaces;
 
-namespace Application
+namespace Application.Services
 {
     public class DetalleGastoService : IDetalleGastoService
     {
@@ -19,30 +20,29 @@ namespace Application
             _gastoRepository = gastoRepository;
         }
 
-        public async Task RegistrarGastoConDetallesAsync(GastoConDetallesCreateDto dto)
+        // 👈 Usamos el DTO real que tenés en pantalla
+        public async Task RegistrarGastoConDetallesAsync(DetalleGastoCreateDto dto)
         {
-            if (dto.MontoTotal <= 0) throw new Exception("El monto total debe ser mayor a cero.");
-
-            // 1. Guardamos el Gasto Maestro
+            // 1. Guardamos el Gasto Maestro usando las propiedades de tu DTO
             var nuevoGasto = new Gasto
             {
-                ViajeId = dto.ViajeId,
-                ParticipanteId = dto.PagadorParticipanteId,
-                Descripcion = dto.Descripcion,
-                Monto = dto.MontoTotal,
+                // Si tu DetalleGastoCreateDto maneja la creación completa del gasto, mapeás sus propiedades acá:
+                ParticipanteId = dto.ParticipanteId,
+                Monto = dto.MontoIndividual,
                 Fecha = DateTime.Now
+                // Agregá acá ViajeId o Descripcion si tu DetalleGastoCreateDto los tiene adentro
             };
             var gastoCreado = await _gastoRepository.AddAsync(nuevoGasto);
 
-            // 2. Mapeamos los detalles (Corregido sin firmas de propiedades)
-            var detallesEntities = dto.Divisiones.Select(d => new DetalleGasto
+            // 2. Mapeamos el detalle individual
+            var nuevoDetalle = new DetalleGasto
             {
                 GastoId = gastoCreado.Id,
-                ParticipanteId = d.ParticipanteId,
-                MontoIndividual = d.MontoIndividual
-            }).ToList();
+                ParticipanteId = dto.ParticipanteId,
+                MontoIndividual = dto.MontoIndividual
+            };
 
-            await _detalleRepository.AddRangeAsync(detallesEntities);
+            await _detalleRepository.AddAsync(nuevoDetalle);
         }
 
         public async Task<List<DetalleGastoDto>> ObtenerDetallesPorGastoAsync(int gastoId)

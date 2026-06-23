@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Application.Models;
 
-namespace Application
+namespace Application.Interfaces
 {
     public interface IDetalleGastoService
     {
-        Task RegistrarGastoConDetallesAsync(GastoConDetallesCreateDto dto);
+        Task RegistrarGastoConDetallesAsync(DetalleGastoCreateDto dto); 
         Task<List<DetalleGastoDto>> ObtenerDetallesPorGastoAsync(int gastoId);
     }
 }
