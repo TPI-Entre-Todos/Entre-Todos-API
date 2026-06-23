@@ -1,9 +1,8 @@
-using System;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Application.Interfaces;
-using Application;
 using Application.Models;
+using System;
+using System.Threading.Tasks;
 
 namespace Web.Controllers
 {
@@ -13,20 +12,19 @@ namespace Web.Controllers
     {
         private readonly IDetalleGastoService _service;
 
-        // Inyección perfecta usando la Interfaz
-        public DetalleGastoController(IDetalleGastoService service)
+                public DetalleGastoController(IDetalleGastoService service)
         {
             _service = service;
         }
 
-        // POST: api/DetalleGasto (Registra el gasto con toda su división)
+        
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] GastoConDetallesCreateDto dto)
+        public async Task<IActionResult> Post([FromBody] DetalleGastoCreateDto dto)
         {
             try
             {
                 await _service.RegistrarGastoConDetallesAsync(dto);
-                return Ok(new { mensaje = "Gasto y sus detalles divididos correctamente." });
+                return Ok(new { mensaje = "Gasto y detalle registrados correctamente." });
             }
             catch (Exception ex)
             {
@@ -34,7 +32,7 @@ namespace Web.Controllers
             }
         }
 
-        // GET: api/DetalleGasto/gasto/5 (Ver cómo se dividió un gasto específico)
+       
         [HttpGet("gasto/{gastoId}")]
         public async Task<IActionResult> GetPorGasto(int gastoId)
         {
