@@ -10,12 +10,15 @@ namespace Application.Services
     {
 
         private readonly IViajeRepository _viajeRepository;
-        public ViajeService(IViajeRepository viajeRepository)
+
+        private readonly IParticipanteViajeRepository _participanteViajeRepository;
+        public ViajeService(IViajeRepository viajeRepository, IParticipanteViajeRepository participanteViajeRepository)
         {
             _viajeRepository = viajeRepository;
+            _participanteViajeRepository = participanteViajeRepository;
         }
 
-        public ViajeDto Add(ViajeRequest request)
+        public ViajeDto Add(ViajeRequest request, int userIdClaim)
         {
             var viaje = new Viaje(
                 request.Nombre!,
@@ -24,19 +27,44 @@ namespace Application.Services
             );
 
             _viajeRepository.Add(viaje);
+
+            var participante = new ParticipanteViaje(userIdClaim, viaje.Id, true);
+            _participanteViajeRepository.Add(participante);
+
             return ViajeDto.Create(viaje);
         }
 
-        public List<ViajeDto> Get()
+        public List<ViajeDto> Get(int userId, bool esAdmin)
         {
             var viajes = _viajeRepository.GetAll();
+
+            if (!esAdmin)
+            {
+                // Obtener solo los IDs de viajes donde participa este usuario
+                var viajesDelUsuario = _participanteViajeRepository.GetByUsuarioId(userId)
+                    .Select(pv => pv.ViajeId)
+                    .ToList();
+
+                viajes = viajes.Where(v => viajesDelUsuario.Contains(v.Id)).ToList();
+            }
+
             return ViajeDto.CreateList(viajes);
         }
 
-        public ViajeDto? GetById(int id)
+        public ViajeDto? GetById(int id, int userId, bool esAdmin)
         {
             var viaje = _viajeRepository.GetById(id);
-            return viaje == null ? null : ViajeDto.Create(viaje);
+            if (viaje == null) return null;
+
+            if (!esAdmin)
+            {
+                // Verificar que el usuario es participante del viaje
+                var participante = _participanteViajeRepository.GetByIds(userId, id);
+                if (participante == null)
+                    throw new UnauthorizedAccessException("No estás autorizado para ver este viaje.");
+            }
+
+            return ViajeDto.Create(viaje);
         }
 
         public void Delete(int id)

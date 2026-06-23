@@ -33,16 +33,31 @@ namespace Application.Services
         }
 
         // 2. CONSULTA: Obtener por Viaje
-        public List<ParticipanteViajeDto> ObtenerPorViaje(int viajeId)
+        public List<ParticipanteViajeDto> ObtenerPorViaje(int viajeId, int usuarioId)
+        {
+            var miembro = _repository.GetByIds(usuarioId, viajeId);
+            if (miembro == null) throw new UnauthorizedAccessException("No estás registrado en este viaje.");
+
+            var lista = _repository.GetByViajeId(viajeId);
+            return ParticipanteViajeDto.CreateList(lista);
+        }
+
+        public List<ParticipanteViajeDto> ObtenerPorViajeAdmin(int viajeId)
         {
             var lista = _repository.GetByViajeId(viajeId);
             return ParticipanteViajeDto.CreateList(lista);
         }
 
+
         // CONSULTA: Obtener todos los participantes
-        public List<ParticipanteViajeDto> ObtenerTodos()
+        public List<ParticipanteViajeDto> ObtenerTodos(int usuarioId, bool esAdmin)
         {
-            var lista = _repository.ObtenerTodos();
+            List<ParticipanteViaje> lista;
+            if (esAdmin)
+                lista = _repository.ObtenerTodos();
+            else
+                lista = _repository.GetByUsuarioId(usuarioId);
+
             return ParticipanteViajeDto.CreateList(lista);
         }
 

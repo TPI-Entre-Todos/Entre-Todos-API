@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace Infrastructure.Data
 {
@@ -31,6 +32,15 @@ namespace Infrastructure.Data
                 .ToList();
         }
 
+        // Obtiene los participantes asociados a un usuario
+        public List<ParticipanteViaje> GetByUsuarioId(int usuarioId)
+        {
+            return _context.ParticipantesViaje
+                .Include(pv => pv.Usuario)
+                .Where(pv => pv.UsuarioId == usuarioId)
+                .ToList();
+        }
+
         // Busca si un usuario ya pertenece a un viaje (sirve para evitar duplicados)
         public ParticipanteViaje? GetByIds(int usuarioId, int viajeId)
         {
@@ -56,7 +66,6 @@ namespace Infrastructure.Data
         }
 
         // Actualiza los datos del participante (Modificación, ej: aceptar invitación o cambiar saldo)
-
 
         public void Update(ParticipanteViaje entity)
         {
