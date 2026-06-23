@@ -43,6 +43,27 @@ namespace Infrastructure.Data
                 .WithMany(g => g.DetallesGasto)
                 .HasForeignKey(dg => dg.GastoId)
                 .OnDelete(DeleteBehavior.Cascade); // Si borrás el Gasto, se borran automáticamente sus divisiones
+                
+                // Un Pago tiene un Remitente (El participante que transfiere el dinero)
+            modelBuilder.Entity<Pago>()
+                .HasOne(p => p.Remitente)
+                .WithMany(pv => pv.PagosRealizados)
+                .HasForeignKey(p => p.RemitenteId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Un Pago tiene un Destinatario (El participante que recibe la transferencia)
+            modelBuilder.Entity<Pago>()
+                .HasOne(p => p.Destinatario)
+                .WithMany(pv => pv.PagosRecibidos)
+                .HasForeignKey(p => p.DestinatarioId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Un Pago pertenece a un Viaje en específico
+            modelBuilder.Entity<Pago>()
+                .HasOne(p => p.Viaje)
+                .WithMany(v => v.Pagos)
+                .HasForeignKey(p => p.ViajeId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

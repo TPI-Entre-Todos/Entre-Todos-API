@@ -7,18 +7,18 @@ namespace Domain.Entities
         public int Id { get; set; }
         public int ViajeId { get; set; }
         
-        public int RemitenteId { get; set; } //  El participante que TRANSFIERE (antes ParticipanteId)
-        public int DestinatarioId { get; set; } // El participante que RECIBE la plata
+        public int RemitenteId { get; set; } // El que transfiere
+        public int DestinatarioId { get; set; } // El que recibe
         
         public decimal Monto { get; set; }
         public DateTime Fecha { get; set; }
         public string Metodo { get; set; }
         public string Comprobante { get; set; }
 
-        
+        // Propiedades de navegación
         public Viaje Viaje { get; set; }
-        public ParticipanteViaje Remitente { get; set; } //  Mapea al que paga
-        public ParticipanteViaje Destinatario { get; set; } //  Mapea al que recibe
+        public ParticipanteViaje Remitente { get; set; } 
+        public ParticipanteViaje Destinatario { get; set; } 
         
         public Pago(int remitenteId, int destinatarioId, int viajeId, decimal monto, string metodo, string comprobante)
         {
