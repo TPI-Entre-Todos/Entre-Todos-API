@@ -18,56 +18,34 @@ namespace Application
         }
 
         // 1. ALTA: Crear un gasto
-        public async Task<GastoDto> CrearGastoAsync(GastoCreateDto dto)
+        public GastoDto CrearGasto(GastoRequest dto)
         {
             if (dto.Monto <= 0) throw new Exception("El monto del gasto debe ser mayor a cero.");
             if (string.IsNullOrEmpty(dto.Descripcion)) throw new Exception("La descripción es obligatoria.");
 
-            var nuevoGasto = new Gasto
-            {
-                ViajeId = dto.ViajeId,
-                ParticipanteId = dto.ParticipanteId,
-                Descripcion = dto.Descripcion,
-                Monto = dto.Monto,
-                Fecha = DateTime.Now // Se registra con la fecha actual
-            };
+            var nuevoGasto = new Gasto(dto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
 
-            var creado = await _gastoRepository.AddAsync(nuevoGasto);
 
-            return new GastoDto
-            {
-                Id = creado.Id,
-                ViajeId = creado.ViajeId,
-                ParticipanteId = creado.ParticipanteId,
-                Descripcion = creado.Descripcion,
-                Monto = creado.Monto,
-                Fecha = creado.Fecha
-            };
+            var creado = _gastoRepository.Add(nuevoGasto);
+
+            return GastoDto.Create(creado);
         }
 
         // 2. CONSULTA: Obtener gastos de un viaje
-        public async Task<List<GastoDto>> ObtenerGastosPorViajeAsync(int viajeId)
+        public List<GastoDto> ObtenerGastosPorViaje(int viajeId)
         {
-            var lista = await _gastoRepository.GetByViajeIdAsync(viajeId);
+            var lista = _gastoRepository.GetByViajeId(viajeId);
 
-            return lista.Select(g => new GastoDto
-            {
-                Id = g.Id,
-                ViajeId = g.ViajeId,
-                ParticipanteId = g.ParticipanteId,
-                Descripcion = g.Descripcion,
-                Monto = g.Monto,
-                Fecha = g.Fecha
-            }).ToList();
+            return GastoDto.CreateList(lista);
         }
 
         // 3. BAJA: Eliminar un gasto
-        public async Task EliminarGastoAsync(int id)
+        public void EliminarGasto(int id)
         {
-            var gasto = await _gastoRepository.GetByIdAsync(id);
+            var gasto = _gastoRepository.GetById(id);
             if (gasto == null) throw new Exception("El gasto no existe.");
 
-            await _gastoRepository.DeleteAsync(id);
+            _gastoRepository.Delete(id);
         }
     }
 }

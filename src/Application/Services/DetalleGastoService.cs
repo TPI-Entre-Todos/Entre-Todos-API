@@ -21,34 +21,25 @@ namespace Application.Services
         }
 
         // 👈 Usamos el DTO real que tenés en pantalla
-        public async Task RegistrarGastoConDetallesAsync(DetalleGastoCreateDto dto)
+        public DetalleGasto RegistrarGastoConDetalles(DetalleGastoRequest dto)
         {
-            // 1. Guardamos el Gasto Maestro usando las propiedades de tu DTO
-            var nuevoGasto = new Gasto
-            {
-                // Si tu DetalleGastoCreateDto maneja la creación completa del gasto, mapeás sus propiedades acá:
-                ParticipanteId = dto.ParticipanteId,
-                Monto = dto.MontoIndividual,
-                Fecha = DateTime.Now
-                // Agregá acá ViajeId o Descripcion si tu DetalleGastoCreateDto los tiene adentro
-            };
-            var gastoCreado = await _gastoRepository.AddAsync(nuevoGasto);
 
-            // 2. Mapeamos el detalle individual
             var nuevoDetalle = new DetalleGasto
             {
+                Id = dto.Id,
                 GastoId = gastoCreado.Id,
                 ParticipanteId = dto.ParticipanteId,
                 MontoIndividual = dto.MontoIndividual
             };
 
-            await _detalleRepository.AddAsync(nuevoDetalle);
+            _detalleRepository.Add(nuevoDetalle);
+            return nuevoDetalle;
         }
 
-        public async Task<List<DetalleGastoDto>> ObtenerDetallesPorGastoAsync(int gastoId)
+        public List<DetalleGastoDto> ObtenerDetallesPorGasto(int gastoId)
         {
-            var detalles = await _detalleRepository.GetByGastoIdAsync(gastoId);
-            
+            var detalles = _detalleRepository.GetByGastoId(gastoId);
+
             return detalles.Select(d => new DetalleGastoDto
             {
                 Id = d.Id,

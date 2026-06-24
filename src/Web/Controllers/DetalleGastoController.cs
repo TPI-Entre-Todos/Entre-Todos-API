@@ -10,21 +10,21 @@ namespace Web.Controllers
     [Route("api/[controller]")]
     public class DetalleGastoController : ControllerBase
     {
-        private readonly IDetalleGastoService _service;
+        private readonly IDetalleGastoService _serviceDetalleGasto;
 
-                public DetalleGastoController(IDetalleGastoService service)
+        public DetalleGastoController(IDetalleGastoService serviceDetalleGasto)
         {
-            _service = service;
+            _serviceDetalleGasto = serviceDetalleGasto;
         }
 
-        
+
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] DetalleGastoCreateDto dto)
+        public IActionResult Post([FromBody] DetalleGastoCreateDto dto)
         {
             try
             {
-                await _service.RegistrarGastoConDetallesAsync(dto);
-                return Ok(new { mensaje = "Gasto y detalle registrados correctamente." });
+                _serviceDetalleGasto.RegistrarGastoConDetalles(dto);
+                return Ok("Gasto y detalle registrados correctamente.");
             }
             catch (Exception ex)
             {
@@ -32,13 +32,13 @@ namespace Web.Controllers
             }
         }
 
-       
+
         [HttpGet("gasto/{gastoId}")]
-        public async Task<IActionResult> GetPorGasto(int gastoId)
+        public IActionResult GetPorGasto(int gastoId)
         {
             try
             {
-                var detalles = await _service.ObtenerDetallesPorGastoAsync(gastoId);
+                var detalles = _serviceDetalleGasto.ObtenerDetallesPorGasto(gastoId);
                 return Ok(detalles);
             }
             catch (Exception ex)

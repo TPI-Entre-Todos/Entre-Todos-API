@@ -19,13 +19,13 @@ namespace Web.Controllers
             _gastoService = gastoService;
         }
 
-       
+
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] GastoCreateDto dto)
+        public IActionResult Post([FromBody] GastoRequest dto)
         {
             try
             {
-                var resultado = await _gastoService.CrearGastoAsync(dto);
+                var resultado = _gastoService.CrearGasto(dto);
                 return Ok(resultado);
             }
             catch (Exception ex)
@@ -35,11 +35,11 @@ namespace Web.Controllers
         }
 
         [HttpGet("viaje/{viajeId}")]
-        public async Task<IActionResult> GetPorViaje(int viajeId)
+        public IActionResult GetPorViaje(int viajeId)
         {
             try
             {
-                var gastos = await _gastoService.ObtenerGastosPorViajeAsync(viajeId);
+                var gastos = _gastoService.ObtenerGastosPorViaje(viajeId);
                 return Ok(gastos);
             }
             catch (Exception ex)
@@ -49,11 +49,11 @@ namespace Web.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public IActionResult Delete(int id)
         {
             try
             {
-                await _gastoService.EliminarGastoAsync(id);
+                _gastoService.EliminarGasto(id);
                 return NoContent();
             }
             catch (Exception ex)

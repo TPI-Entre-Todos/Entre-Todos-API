@@ -14,5 +14,14 @@ namespace Domain.Entities
         public Viaje Viaje { get; set; }
         public ParticipanteViaje Participante { get; set; }
         public ICollection<DetalleGasto> DetallesGasto { get; set; } = new List<DetalleGasto>();
+        public Gasto(int viajeId, int participanteId, string descripcion, decimal monto)
+        {
+            ViajeId = viajeId;
+            ParticipanteId = participanteId;
+            Descripcion = descripcion;
+            Monto = monto;
+            Fecha = DateTime.Now;
+        }
+
     }
 }

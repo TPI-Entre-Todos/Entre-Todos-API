@@ -6,8 +6,8 @@ namespace Application
 {
     public interface IGastoService
     {
-        Task<GastoDto> CrearGastoAsync(GastoCreateDto dto);
-        Task<List<GastoDto>> ObtenerGastosPorViajeAsync(int viajeId);
-        Task EliminarGastoAsync(int id);
+        GastoDto CrearGasto(GastoRequest dto);
+        List<GastoDto> ObtenerGastosPorViaje(int viajeId);
+        void EliminarGasto(int id);
     }
 }

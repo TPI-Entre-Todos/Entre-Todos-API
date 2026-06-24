@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Domain.Entities;
@@ -16,39 +17,40 @@ namespace Infrastructure.Data
             _context = context;
         }
 
-        public async Task<Gasto> GetByIdAsync(int id)
+        public Gasto GetById(int id)
         {
-            return await _context.Gastos
-                .FirstOrDefaultAsync(g => g.Id == id);
+            return _context.Gastos
+                .FirstOrDefault(g => g.Id == id);
         }
 
-        public async Task<List<Gasto>> GetByViajeIdAsync(int viajeId)
+        public List<Gasto> GetByViajeId(int viajeId)
         {
-            return await _context.Gastos
+            return _context.Gastos
                 .Where(g => g.ViajeId == viajeId)
-                .ToListAsync();
+                .ToList();
         }
 
-        public async Task<Gasto> AddAsync(Gasto entity)
+        public Gasto Add(Gasto entity)
         {
-            await _context.Gastos.AddAsync(entity);
-            await _context.SaveChangesAsync();
+            _context.Gastos.Add(entity);
+            _context.SaveChangesAsync();
             return entity;
         }
 
-        public async Task UpdateAsync(Gasto entity)
+        public Gasto Update(Gasto entity)
         {
             _context.Gastos.Update(entity);
-            await _context.SaveChangesAsync();
+            _context.SaveChangesAsync();
+            return entity;
         }
 
-        public async Task DeleteAsync(int id)
+        public void Delete(int id)
         {
-            var entity = await GetByIdAsync(id);
+            var entity = GetById(id);
             if (entity != null)
             {
                 _context.Gastos.Remove(entity);
-                await _context.SaveChangesAsync();
+                _context.SaveChangesAsync();
             }
         }
     }

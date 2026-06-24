@@ -6,10 +6,10 @@ namespace Domain.Interfaces
 {
     public interface IGastoRepository
     {
-        Task<Gasto> GetByIdAsync(int id);
-        Task<List<Gasto>> GetByViajeIdAsync(int viajeId);
-        Task<Gasto> AddAsync(Gasto entity);
-        Task UpdateAsync(Gasto entity);
-        Task DeleteAsync(int id);
+        Gasto GetById(int id);
+        List<Gasto> GetByViajeId(int viajeId);
+        Gasto Add(Gasto entity);
+        Gasto Update(Gasto entity);
+        void Delete(int id);
     }
 }
