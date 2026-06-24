@@ -49,7 +49,7 @@ namespace Web.Controllers
         }
 
         // PUT: api/Notificacion/5/leer (Marcar como leída)
-        [HttpPut("{id}/leer")]
+        [HttpPut("{id:int}/leer")]
         public IActionResult MarcarLeida(int id)
         {
             try
