@@ -8,7 +8,7 @@ using Domain.Interfaces;
 
 namespace Application
 {
-    public class GastoService
+    public class GastoService : IGastoService
     {
         private readonly IGastoRepository _gastoRepository;
 

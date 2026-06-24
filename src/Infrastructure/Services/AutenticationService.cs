@@ -27,9 +27,10 @@ namespace Infrastructure.Services
                 return null;
 
             var user = _usuarioRepository.GetUserByEmail(authenticationRequest.Email);
-
             if (user == null) return null;
-
+            // ✅ Validar que la contraseña coincida
+            if (user.Password != authenticationRequest.Password)
+                return null;
             return user;
 
         }
@@ -44,9 +45,10 @@ namespace Infrastructure.Services
                 var credentials = new SigningCredentials(securityPassword, SecurityAlgorithms.HmacSha256);
                 var claims = new[]
                 {
-
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Name, user.Nombre)
+                    new Claim(ClaimTypes.Name, user.Nombre),
+                    new Claim(ClaimTypes.Role, user.Rol.ToString())
                 };
                 var jwtToken = new JwtSecurityToken(
                     issuer: _options.Issuer,

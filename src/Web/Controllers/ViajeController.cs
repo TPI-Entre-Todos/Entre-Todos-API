@@ -1,8 +1,8 @@
 using Application.Interfaces;
-using Application.Models;
 using Application.Models.Requests;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Web.Controllers
 {
@@ -21,27 +21,38 @@ namespace Web.Controllers
         [HttpPost]
         public IActionResult Add([FromBody] ViajeRequest request)
         {
-            if (request == null)
-                return BadRequest();
-
-            var result = _viajeService.Add(request);
+            int userIdClaim = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = _viajeService.Add(request, userIdClaim);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
         [HttpGet]
         public IActionResult Get()
         {
-            var viajes = _viajeService.Get();
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin";
+
+            var viajes = _viajeService.Get(userId, esAdmin);
             return Ok(viajes);
         }
         [HttpGet("{id:int}")]
         public IActionResult GetById([FromRoute] int id)
         {
-            var viaje = _viajeService.GetById(id);
-            if (viaje == null)
-                return NotFound();
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin";
 
-            return Ok(viaje);
+            try
+            {
+                var viaje = _viajeService.GetById(id, userId, esAdmin);
+                if (viaje == null)
+                    return NotFound();
+
+                return Ok(viaje);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
         [HttpDelete("{id:int}")]

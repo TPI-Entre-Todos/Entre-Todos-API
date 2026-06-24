@@ -30,11 +30,25 @@ public class InvitacionRepository : IInvitacionRepository
             .FirstOrDefault(i => i.Id == id);
     }
 
+    public Invitacion? GetByToken(string token)
+    {
+        return _context.Invitaciones
+            .Include(i => i.Viaje)
+            .Include(i => i.UsuarioInvitador)
+            .FirstOrDefault(i => i.Token == token);
+    }
+
     public Invitacion Add(Invitacion entity)
     {
         _context.Invitaciones.Add(entity);
         _context.SaveChanges();
         return entity;
+    }
+
+    public void Update(Invitacion entity)
+    {
+        _context.Invitaciones.Update(entity);
+        _context.SaveChanges();
     }
 
     public void Delete(int id)

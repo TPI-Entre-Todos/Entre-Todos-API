@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20260623203651_MapeoRelacionesGastos")]
+    partial class MapeoRelacionesGastos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
@@ -149,9 +152,6 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("DestinatarioId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("TEXT");
 
@@ -162,7 +162,7 @@ namespace Infrastructure.Data.Migrations
                     b.Property<decimal>("Monto")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("RemitenteId")
+                    b.Property<int>("ParticipanteId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ViajeId")
@@ -170,9 +170,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DestinatarioId");
-
-                    b.HasIndex("RemitenteId");
+                    b.HasIndex("ParticipanteId");
 
                     b.HasIndex("ViajeId");
 
@@ -240,17 +238,6 @@ namespace Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Usuarios");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Email = "admin@entretodos.com",
-                            FechaRegistro = new DateTime(2026, 6, 15, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Nombre = "Admin",
-                            Password = "Admin123!",
-                            Rol = 1
-                        });
                 });
 
             modelBuilder.Entity("Domain.Entities.Viaje", b =>
@@ -349,16 +336,10 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.Pago", b =>
                 {
-                    b.HasOne("Domain.Entities.ParticipanteViaje", "Destinatario")
-                        .WithMany("PagosRecibidos")
-                        .HasForeignKey("DestinatarioId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.ParticipanteViaje", "Remitente")
-                        .WithMany("PagosRealizados")
-                        .HasForeignKey("RemitenteId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("Domain.Entities.ParticipanteViaje", "Participante")
+                        .WithMany("Pagos")
+                        .HasForeignKey("ParticipanteId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Viaje", "Viaje")
@@ -367,9 +348,7 @@ namespace Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Destinatario");
-
-                    b.Navigation("Remitente");
+                    b.Navigation("Participante");
 
                     b.Navigation("Viaje");
                 });
@@ -404,9 +383,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.Navigation("GastosPagados");
 
-                    b.Navigation("PagosRealizados");
-
-                    b.Navigation("PagosRecibidos");
+                    b.Navigation("Pagos");
                 });
 
             modelBuilder.Entity("Domain.Entities.Usuario", b =>

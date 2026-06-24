@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,36 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20260604195402_MigrationAgregarEliminarEstadoInvitacion")]
+    partial class MigrationAgregarEliminarEstadoInvitacion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
-
-            modelBuilder.Entity("Domain.Entities.DetalleGasto", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("GastoId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<decimal>("MontoIndividual")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("ParticipanteId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GastoId");
-
-                    b.HasIndex("ParticipanteId");
-
-                    b.ToTable("DetallesGasto");
-                });
 
             modelBuilder.Entity("Domain.Entities.Gasto", b =>
                 {
@@ -113,32 +92,6 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Invitaciones");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Notificacion", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("Fecha")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("Leida")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Mensaje")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UsuarioId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UsuarioId");
-
-                    b.ToTable("Notificaciones");
-                });
-
             modelBuilder.Entity("Domain.Entities.Pago", b =>
                 {
                     b.Property<int>("Id")
@@ -148,9 +101,6 @@ namespace Infrastructure.Data.Migrations
                     b.Property<string>("Comprobante")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("DestinatarioId")
-                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("TEXT");
@@ -162,7 +112,7 @@ namespace Infrastructure.Data.Migrations
                     b.Property<decimal>("Monto")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("RemitenteId")
+                    b.Property<int>("ParticipanteId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ViajeId")
@@ -170,9 +120,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DestinatarioId");
-
-                    b.HasIndex("RemitenteId");
+                    b.HasIndex("ParticipanteId");
 
                     b.HasIndex("ViajeId");
 
@@ -240,17 +188,6 @@ namespace Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Usuarios");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Email = "admin@entretodos.com",
-                            FechaRegistro = new DateTime(2026, 6, 15, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Nombre = "Admin",
-                            Password = "Admin123!",
-                            Rol = 1
-                        });
                 });
 
             modelBuilder.Entity("Domain.Entities.Viaje", b =>
@@ -279,35 +216,16 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Viajes");
                 });
 
-            modelBuilder.Entity("Domain.Entities.DetalleGasto", b =>
-                {
-                    b.HasOne("Domain.Entities.Gasto", "Gasto")
-                        .WithMany("DetallesGasto")
-                        .HasForeignKey("GastoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.ParticipanteViaje", "Participante")
-                        .WithMany("DetallesGastoDebido")
-                        .HasForeignKey("ParticipanteId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Gasto");
-
-                    b.Navigation("Participante");
-                });
-
             modelBuilder.Entity("Domain.Entities.Gasto", b =>
                 {
                     b.HasOne("Domain.Entities.ParticipanteViaje", "Participante")
-                        .WithMany("GastosPagados")
+                        .WithMany()
                         .HasForeignKey("ParticipanteId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Viaje", "Viaje")
-                        .WithMany("Gastos")
+                        .WithMany()
                         .HasForeignKey("ViajeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -336,29 +254,12 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Viaje");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Notificacion", b =>
-                {
-                    b.HasOne("Domain.Entities.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("UsuarioId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Usuario");
-                });
-
             modelBuilder.Entity("Domain.Entities.Pago", b =>
                 {
-                    b.HasOne("Domain.Entities.ParticipanteViaje", "Destinatario")
-                        .WithMany("PagosRecibidos")
-                        .HasForeignKey("DestinatarioId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.ParticipanteViaje", "Remitente")
-                        .WithMany("PagosRealizados")
-                        .HasForeignKey("RemitenteId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("Domain.Entities.ParticipanteViaje", "Participante")
+                        .WithMany("Pagos")
+                        .HasForeignKey("ParticipanteId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Viaje", "Viaje")
@@ -367,9 +268,7 @@ namespace Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Destinatario");
-
-                    b.Navigation("Remitente");
+                    b.Navigation("Participante");
 
                     b.Navigation("Viaje");
                 });
@@ -393,20 +292,9 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Viaje");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Gasto", b =>
-                {
-                    b.Navigation("DetallesGasto");
-                });
-
             modelBuilder.Entity("Domain.Entities.ParticipanteViaje", b =>
                 {
-                    b.Navigation("DetallesGastoDebido");
-
-                    b.Navigation("GastosPagados");
-
-                    b.Navigation("PagosRealizados");
-
-                    b.Navigation("PagosRecibidos");
+                    b.Navigation("Pagos");
                 });
 
             modelBuilder.Entity("Domain.Entities.Usuario", b =>
@@ -416,8 +304,6 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.Viaje", b =>
                 {
-                    b.Navigation("Gastos");
-
                     b.Navigation("Pagos");
 
                     b.Navigation("Participantes");

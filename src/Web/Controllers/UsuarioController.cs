@@ -12,11 +12,10 @@ namespace Web.Controllers
     {
 
         private readonly IUsuarioService _usuarioService;
-        private readonly IEmailService _emailService;
-        public UsuarioController(IUsuarioService usuarioService, IEmailService emailService)
+
+        public UsuarioController(IUsuarioService usuarioService)
         {
             _usuarioService = usuarioService;
-            _emailService = emailService;
         }
 
         [AllowAnonymous]
@@ -31,12 +30,14 @@ namespace Web.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult Get()
         {
             var usuarios = _usuarioService.GetAll();
             return Ok(usuarios);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
@@ -65,5 +66,6 @@ namespace Web.Controllers
             _usuarioService.Delete(id);
             return NoContent();
         }
+
     }
 }
