@@ -10,21 +10,21 @@ namespace Web.Controllers
     [Route("api/[controller]")]
     public class NotificacionController : ControllerBase
     {
-        private readonly INotificacionService _service;
+        private readonly INotificacionService _serviceNotificacion;
 
         // Inyectamos usando la interfaz perfectamente desacoplada
-        public NotificacionController(INotificacionService service)
+        public NotificacionController(INotificacionService serviceNotificacion)
         {
-            _service = service;
+            _serviceNotificacion = serviceNotificacion;
         }
 
         // POST: api/Notificacion (Crear una notificación manual/sistema)
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] NotificacionCreateDto dto)
+        public IActionResult Post([FromBody] NotificacionCreateDto dto)
         {
             try
             {
-                var resultado = await _service.CrearNotificacionAsync(dto);
+                var resultado = _serviceNotificacion.CrearNotificacion(dto);
                 return Ok(resultado);
             }
             catch (Exception ex)
@@ -34,12 +34,12 @@ namespace Web.Controllers
         }
 
         // GET: api/Notificacion/usuario/3 (Traer las alertas de un usuario)
-        [HttpGet("usuario/{usuarioId}")]
-        public async Task<IActionResult> GetPorUsuario(int usuarioId)
+        [HttpGet("usuario/{usuarioId:int}")]
+        public IActionResult GetPorUsuario(int usuarioId)
         {
             try
             {
-                var notificaciones = await _service.ObtenerPorUsuarioAsync(usuarioId);
+                var notificaciones = _serviceNotificacion.ObtenerPorUsuario(usuarioId);
                 return Ok(notificaciones);
             }
             catch (Exception ex)
@@ -50,11 +50,11 @@ namespace Web.Controllers
 
         // PUT: api/Notificacion/5/leer (Marcar como leída)
         [HttpPut("{id}/leer")]
-        public async Task<IActionResult> MarcarLeida(int id)
+        public IActionResult MarcarLeida(int id)
         {
             try
             {
-                await _service.MarcarComoLeidaAsync(id);
+                _serviceNotificacion.MarcarComoLeida(id);
                 return NoContent();
             }
             catch (Exception ex)
