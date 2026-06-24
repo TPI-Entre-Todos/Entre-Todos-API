@@ -23,6 +23,7 @@ if (!builder.Environment.IsDevelopment())
 
 
 builder.Services.AddControllers();
+builder.Services.AddTransient<GlobalExceptionHandlingMiddleware>();
 
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IViajeRepository, ViajeRepository>();

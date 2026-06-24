@@ -21,30 +21,16 @@ namespace Web.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] DetalleGastoCreateDto dto)
         {
-            try
-            {
-                await _service.RegistrarGastoConDetallesAsync(dto);
-                return Ok(new { mensaje = "Gasto y detalle registrados correctamente." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            await _service.RegistrarGastoConDetallesAsync(dto);
+            return Ok(new { mensaje = "Gasto y detalle registrados correctamente." });
         }
 
        
         [HttpGet("gasto/{gastoId}")]
         public async Task<IActionResult> GetPorGasto(int gastoId)
         {
-            try
-            {
-                var detalles = await _service.ObtenerDetallesPorGastoAsync(gastoId);
-                return Ok(detalles);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var detalles = await _service.ObtenerDetallesPorGastoAsync(gastoId);
+            return Ok(detalles);
         }
     }
 }

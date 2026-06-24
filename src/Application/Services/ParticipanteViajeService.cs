@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Application.Models;
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Interfaces;
 using Application.Interfaces;
 using Application.Models.Requests;
@@ -23,7 +24,7 @@ namespace Application.Services
         public ParticipanteViajeDto RegistrarParticipante(ParticipanteViajeCreateRequest dto)
         {
             var existe = _repository.GetByIds(dto.UsuarioId, dto.ViajeId);
-            if (existe != null) throw new Exception("El usuario ya se encuentra registrado o invitado.");
+            if (existe != null) throw new BadRequestException("El usuario ya se encuentra registrado o invitado.");
 
             var nuevo = new ParticipanteViaje(dto.UsuarioId, dto.ViajeId, dto.EsOrganizador);
             var creado = _repository.Add(nuevo);
@@ -36,7 +37,7 @@ namespace Application.Services
         public List<ParticipanteViajeDto> ObtenerPorViaje(int viajeId, int usuarioId)
         {
             var miembro = _repository.GetByIds(usuarioId, viajeId);
-            if (miembro == null) throw new UnauthorizedAccessException("No estás registrado en este viaje.");
+            if (miembro == null) throw new UnauthorizedException("No estás registrado en este viaje.");
 
             var lista = _repository.GetByViajeId(viajeId);
             return ParticipanteViajeDto.CreateList(lista);
@@ -65,10 +66,10 @@ namespace Application.Services
         public void EliminarParticipante(int id)
         {
             var participante = _repository.GetById(id);
-            if (participante == null) throw new Exception("Participante no encontrado.");
+            if (participante == null) throw new NotFoundException("Participante no encontrado.");
 
             if (participante.SaldoTotal != 0)
-                throw new Exception("No se puede eliminar un participante con saldos pendientes.");
+                throw new BadRequestException("No se puede eliminar un participante con saldos pendientes.");
 
             _repository.Delete(id);
         }

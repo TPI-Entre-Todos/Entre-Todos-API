@@ -23,43 +23,22 @@ namespace Web.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] GastoCreateDto dto)
         {
-            try
-            {
-                var resultado = await _gastoService.CrearGastoAsync(dto);
-                return Ok(resultado);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var resultado = await _gastoService.CrearGastoAsync(dto);
+            return Ok(resultado);
         }
 
         [HttpGet("viaje/{viajeId}")]
         public async Task<IActionResult> GetPorViaje(int viajeId)
         {
-            try
-            {
-                var gastos = await _gastoService.ObtenerGastosPorViajeAsync(viajeId);
-                return Ok(gastos);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var gastos = await _gastoService.ObtenerGastosPorViajeAsync(viajeId);
+            return Ok(gastos);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
-            {
-                await _gastoService.EliminarGastoAsync(id);
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            await _gastoService.EliminarGastoAsync(id);
+            return NoContent();
         }
     }
 }

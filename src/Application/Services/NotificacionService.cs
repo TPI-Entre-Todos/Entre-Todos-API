@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Application.Models;
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Interfaces;
 
 namespace Application
@@ -55,7 +56,7 @@ namespace Application
         public async Task MarcarComoLeidaAsync(int id)
         {
             var notificacion = await _repository.GetByIdAsync(id);
-            if (notificacion == null) throw new Exception("Notificación no encontrada.");
+            if (notificacion == null) throw new NotFoundException("Notificación no encontrada.");
 
             notificacion.Leida = true;
             await _repository.UpdateAsync(notificacion);

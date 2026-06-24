@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Application.Models;
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Interfaces;
 
 namespace Application
@@ -20,8 +21,8 @@ namespace Application
         // 1. ALTA: Crear un gasto
         public async Task<GastoDto> CrearGastoAsync(GastoCreateDto dto)
         {
-            if (dto.Monto <= 0) throw new Exception("El monto del gasto debe ser mayor a cero.");
-            if (string.IsNullOrEmpty(dto.Descripcion)) throw new Exception("La descripción es obligatoria.");
+            if (dto.Monto <= 0) throw new BadRequestException("El monto del gasto debe ser mayor a cero.");
+            if (string.IsNullOrEmpty(dto.Descripcion)) throw new BadRequestException("La descripción es obligatoria.");
 
             var nuevoGasto = new Gasto
             {
@@ -65,7 +66,7 @@ namespace Application
         public async Task EliminarGastoAsync(int id)
         {
             var gasto = await _gastoRepository.GetByIdAsync(id);
-            if (gasto == null) throw new Exception("El gasto no existe.");
+            if (gasto == null) throw new NotFoundException("El gasto no existe.");
 
             await _gastoRepository.DeleteAsync(id);
         }

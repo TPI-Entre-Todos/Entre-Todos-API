@@ -25,15 +25,8 @@ namespace Web.Controllers
         [Authorize(Roles = "Admin")]
         public IActionResult Add([FromBody] ParticipanteViajeCreateRequest Request)
         {
-            try
-            {
                 var resultado = _service.RegistrarParticipante(Request);
                 return Ok(resultado);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
         }
 
         // GET: api/ParticipanteViaje/viaje/5 (Listar los de un viaje de usario)
@@ -42,17 +35,8 @@ namespace Web.Controllers
         public IActionResult GetPorViaje(int viajeId)
         {
             int userIdClaim = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-
-            try
-            {
-                var participantes = _service.ObtenerPorViaje(viajeId, userIdClaim);
-                return Ok(participantes);
-            }
-
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var participantes = _service.ObtenerPorViaje(viajeId, userIdClaim);
+            return Ok(participantes);
         }
 
         // GET: api/ParticipanteViaje/viaje/Admin/5 (Listar los de un viaje como admin)
@@ -77,15 +61,9 @@ namespace Web.Controllers
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
-            try
-            {
+
                 _service.EliminarParticipante(id);
                 return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
         }
 
     }
