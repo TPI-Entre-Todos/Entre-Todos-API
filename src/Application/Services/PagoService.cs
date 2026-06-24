@@ -11,10 +11,16 @@ namespace Application.Services
     public class PagoService : IPagoService
     {
         private readonly IPagoRepository _pagoRepository;
+        private readonly INotificacionRepository _notificacionRepository;
+        private readonly IViajeRepository _viajeRepository;
+        private readonly IUsuarioRepository _usuarioRepository;
 
-        public PagoService(IPagoRepository pagoRepository)
+        public PagoService(IPagoRepository pagoRepository, INotificacionRepository notificacionRepository, IViajeRepository viajeRepository, IUsuarioRepository usuarioRepository)
         {
             _pagoRepository = pagoRepository;
+            _notificacionRepository = notificacionRepository;
+            _viajeRepository = viajeRepository;
+            _usuarioRepository = usuarioRepository;
         }
 
         public List<PagoDto> GetAll()
@@ -32,17 +38,21 @@ namespace Application.Services
         public PagoDto Add(PagoRequest request)
         {
             ValidarPagoParaCreacion(request);
-            
+
             // Usamos el constructor actualizado de la entidad Pago (RemitenteId, DestinatarioId, ViajeId, Monto, Metodo, Comprobante)
             Pago pago = new Pago(
                 request.ParticipanteId, // Remitente
-                request.ParticipanteId, // Destinatario (Temporalmente el mismo hasta mapear DestinatarioId en PagoRequest)
-                request.ViajeId, 
-                request.Monto.Value, 
-                request.Metodo, 
+                request.DestinatarioId, // Destinatario (Temporalmente el mismo hasta mapear DestinatarioId en PagoRequest)
+                request.ViajeId,
+                request.Monto.Value,
+                request.Metodo,
                 request.Comprobante
             );
-
+            Usuario usuario = _usuarioRepository.GetById(pago.DestinatarioId);
+            Viaje viaje = _viajeRepository.GetById(pago.ViajeId);
+            var mensaje = $"Usuario {usuario.Nombre} cargó un pago en el viaje {viaje.Nombre}";
+            var nuevaNotificacion = new Notificacion(pago.DestinatarioId, mensaje);
+            _notificacionRepository.Add(nuevaNotificacion);
             _pagoRepository.Add(pago);
             return PagoDto.Create(pago);
         }
@@ -56,13 +66,13 @@ namespace Application.Services
             // Validamos solo los datos que el usuario está intentando modificar
             if (request.ParticipanteId > 0)
                 existing.RemitenteId = request.ParticipanteId; // 👈 Corregido: propiedad de la entidad actualizada
-                
+
             if (request.ViajeId > 0)
                 existing.ViajeId = request.ViajeId;
-                
+
             if (request.Monto.HasValue)
             {
-                if (request.Monto.Value <= 0) 
+                if (request.Monto.Value <= 0)
                     throw new ArgumentException("El monto debe ser mayor a 0");
                 existing.Monto = request.Monto.Value;
             }
@@ -70,6 +80,12 @@ namespace Application.Services
                 existing.Metodo = request.Metodo;
             if (!string.IsNullOrEmpty(request.Comprobante))
                 existing.Comprobante = request.Comprobante;
+
+            Usuario usuario = _usuarioRepository.GetById(request.DestinatarioId);
+            Viaje viaje = _viajeRepository.GetById(request.ViajeId);
+            var mensaje = $"Usuario {usuario.Nombre} actualizó un pago en el viaje {viaje.Nombre}";
+            var nuevaNotificacion = new Notificacion(request.DestinatarioId, mensaje);
+            _notificacionRepository.Add(nuevaNotificacion);
 
             return PagoDto.Create(_pagoRepository.Update(existing));
         }
