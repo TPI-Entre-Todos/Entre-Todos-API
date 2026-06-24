@@ -3,11 +3,13 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Application;
 using Application.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class NotificacionController : ControllerBase
     {
         private readonly INotificacionService _serviceNotificacion;
@@ -20,6 +22,7 @@ namespace Web.Controllers
 
         // POST: api/Notificacion (Crear una notificación manual/sistema)
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public IActionResult Post([FromBody] NotificacionCreateDto dto)
         {
             try
