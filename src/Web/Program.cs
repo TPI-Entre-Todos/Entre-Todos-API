@@ -9,6 +9,7 @@ using Microsoft.OpenApi;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Application;
+using Web.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -143,6 +144,8 @@ else
     });
     app.MapOpenApi();
 }
+
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
