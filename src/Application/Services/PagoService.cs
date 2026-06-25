@@ -48,7 +48,7 @@ namespace Application.Services
             );
 
             _pagoRepository.Add(pago);
-            return PagoDto.Create(pago);
+            return PagoDto.Create(pago);    
         }
 
         public PagoDto Update(int id, PagoRequest request)
