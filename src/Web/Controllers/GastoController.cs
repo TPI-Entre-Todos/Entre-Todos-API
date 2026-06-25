@@ -1,65 +1,124 @@
-using System;
-using System.Threading.Tasks;
+using System.Security.Claims;
+using Application.Interfaces;
+using Application.Models.Requests;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Application;
-using Application.Models;
 
 namespace Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class GastoController : ControllerBase
     {
-        // 👇 Cambiamos GastoService por IGastoService
         private readonly IGastoService _gastoService;
 
-        // 👇 Acá también cambiamos el parámetro por IGastoService
         public GastoController(IGastoService gastoService)
         {
             _gastoService = gastoService;
         }
 
+        // ─── Creación por tipo de división ────────────────────────────────────────
 
-        [HttpPost]
-        public IActionResult Post([FromBody] GastoRequest dto)
+        [HttpPost("igualitario")]
+        public IActionResult PostIgualitario([FromBody] GastoIgualitarioRequest dto)
         {
             try
             {
-                var resultado = _gastoService.CrearGasto(dto);
-                return Ok(resultado);
+                var (userId, esAdmin) = ObtenerIdentidad();
+                var resultado = _gastoService.CrearIgualitario(dto, userId, esAdmin);
+                return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
             }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
-        [HttpGet("viaje/{viajeId}")]
+        [HttpPost("porcentaje")]
+        public IActionResult PostPorPorcentaje([FromBody] GastoPorPorcentajeRequest dto)
+        {
+            try
+            {
+                var (userId, esAdmin) = ObtenerIdentidad();
+                var resultado = _gastoService.CrearPorPorcentaje(dto, userId, esAdmin);
+                return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
+            }
+            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpPost("personalizado")]
+        public IActionResult PostPersonalizado([FromBody] GastoPersonalizadoRequest dto)
+        {
+            try
+            {
+                var (userId, esAdmin) = ObtenerIdentidad();
+                var resultado = _gastoService.CrearPersonalizado(dto, userId, esAdmin);
+                return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
+            }
+            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        // ─── Consulta ─────────────────────────────────────────────────────────────
+
+        [HttpGet("{id:int}")]
+        public IActionResult GetById(int id)
+        {
+            try
+            {
+                var (userId, esAdmin) = ObtenerIdentidad();
+                var gasto = _gastoService.ObtenerGastoPorId(id, userId, esAdmin);
+                if (gasto == null) return NotFound();
+                return Ok(gasto);
+            }
+            catch (UnauthorizedAccessException) { return Forbid(); }
+        }
+
+        [HttpGet("viaje/{viajeId:int}")]
         public IActionResult GetPorViaje(int viajeId)
         {
             try
             {
-                var gastos = _gastoService.ObtenerGastosPorViaje(viajeId);
-                return Ok(gastos);
+                var (userId, esAdmin) = ObtenerIdentidad();
+                return Ok(_gastoService.ObtenerGastosPorViaje(viajeId, userId, esAdmin));
             }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            catch (UnauthorizedAccessException) { return Forbid(); }
         }
 
-        [HttpDelete("{id}")]
+        // ─── Actualización y baja ─────────────────────────────────────────────────
+
+        [HttpPut("{id:int}")]
+        public IActionResult Put(int id, [FromBody] GastoConDetallesRequest dto)
+        {
+            try
+            {
+                var (userId, esAdmin) = ObtenerIdentidad();
+                return Ok(_gastoService.ActualizarGasto(id, dto, userId, esAdmin));
+            }
+            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
             try
             {
-                _gastoService.EliminarGasto(id);
+                var (userId, esAdmin) = ObtenerIdentidad();
+                _gastoService.EliminarGasto(id, userId, esAdmin);
                 return NoContent();
             }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        // ─── Helper ───────────────────────────────────────────────────────────────
+
+        private (int userId, bool esAdmin) ObtenerIdentidad()
+        {
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin";
+            return (userId, esAdmin);
         }
     }
 }

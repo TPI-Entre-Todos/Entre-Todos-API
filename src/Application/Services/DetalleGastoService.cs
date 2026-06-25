@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Application.Interfaces;
 using Application.Models;
-using Domain.Entities;
 using Domain.Interfaces;
 
 namespace Application.Services
@@ -13,40 +8,32 @@ namespace Application.Services
     {
         private readonly IDetalleGastoRepository _detalleRepository;
         private readonly IGastoRepository _gastoRepository;
+        private readonly IParticipanteViajeRepository _participanteViajeRepository;
 
-        public DetalleGastoService(IDetalleGastoRepository detalleRepository, IGastoRepository gastoRepository)
+        public DetalleGastoService(
+            IDetalleGastoRepository detalleRepository,
+            IGastoRepository gastoRepository,
+            IParticipanteViajeRepository participanteViajeRepository)
         {
             _detalleRepository = detalleRepository;
             _gastoRepository = gastoRepository;
+            _participanteViajeRepository = participanteViajeRepository;
         }
 
-        // 👈 Usamos el DTO real que tenés en pantalla
-        public DetalleGasto RegistrarGastoConDetalles(DetalleGastoRequest dto)
+        public List<DetalleGastoDto> ObtenerDetallesPorGasto(int gastoId, int userId, bool esAdmin)
         {
+            var gasto = _gastoRepository.GetById(gastoId)
+                ?? throw new ArgumentException("El gasto no existe.");
 
-            var nuevoDetalle = new DetalleGasto
+            if (!esAdmin)
             {
-                Id = dto.Id,
-                GastoId = gastoCreado.Id,
-                ParticipanteId = dto.ParticipanteId,
-                MontoIndividual = dto.MontoIndividual
-            };
+                var participante = _participanteViajeRepository.GetByIds(userId, gasto.ViajeId);
+                if (participante == null)
+                    throw new UnauthorizedAccessException("No estás autorizado para ver los detalles de este gasto.");
+            }
 
-            _detalleRepository.Add(nuevoDetalle);
-            return nuevoDetalle;
-        }
-
-        public List<DetalleGastoDto> ObtenerDetallesPorGasto(int gastoId)
-        {
             var detalles = _detalleRepository.GetByGastoId(gastoId);
-
-            return detalles.Select(d => new DetalleGastoDto
-            {
-                Id = d.Id,
-                GastoId = d.GastoId,
-                ParticipanteId = d.ParticipanteId,
-                MontoIndividual = d.MontoIndividual
-            }).ToList();
+            return DetalleGastoDto.CreateList(detalles);
         }
     }
 }

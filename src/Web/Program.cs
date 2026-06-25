@@ -36,7 +36,6 @@ builder.Services.AddScoped<IParticipanteViajeService, ParticipanteViajeService>(
 builder.Services.AddScoped<IPagoRepository, PagoRepository>();
 builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IGastoRepository, GastoRepository>();
-//builder.Services.AddScoped<GastoService>();
 builder.Services.AddScoped<IGastoService, GastoService>();
 builder.Services.AddScoped<INotificacionRepository, NotificacionRepository>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();

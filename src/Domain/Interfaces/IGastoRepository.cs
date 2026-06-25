@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Domain.Entities;
 
 namespace Domain.Interfaces
@@ -9,7 +8,9 @@ namespace Domain.Interfaces
         Gasto GetById(int id);
         List<Gasto> GetByViajeId(int viajeId);
         Gasto Add(Gasto entity);
-        Gasto Update(Gasto entity);
+        Gasto AddWithDetalles(Gasto gasto, Dictionary<int, decimal> saldoChanges);
+        Gasto UpdateWithDetalles(Gasto gasto, Dictionary<int, decimal> saldoChanges);
         void Delete(int id);
+        void DeleteWithSaldoReversal(int id);
     }
 }

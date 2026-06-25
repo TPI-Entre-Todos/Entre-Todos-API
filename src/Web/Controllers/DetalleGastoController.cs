@@ -1,13 +1,14 @@
-using Microsoft.AspNetCore.Mvc;
-using Application.Interfaces;
-using Application.Models;
 using System;
-using System.Threading.Tasks;
+using System.Security.Claims;
+using Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class DetalleGastoController : ControllerBase
     {
         private readonly IDetalleGastoService _serviceDetalleGasto;
@@ -17,31 +18,22 @@ namespace Web.Controllers
             _serviceDetalleGasto = serviceDetalleGasto;
         }
 
-
-        [HttpPost]
-        public IActionResult Post([FromBody] DetalleGastoCreateDto dto)
-        {
-            try
-            {
-                _serviceDetalleGasto.RegistrarGastoConDetalles(dto);
-                return Ok("Gasto y detalle registrados correctamente.");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-
-        [HttpGet("gasto/{gastoId}")]
+        [HttpGet("gasto/{gastoId:int}")]
         public IActionResult GetPorGasto(int gastoId)
         {
             try
             {
-                var detalles = _serviceDetalleGasto.ObtenerDetallesPorGasto(gastoId);
+                int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin";
+
+                var detalles = _serviceDetalleGasto.ObtenerDetallesPorGasto(gastoId, userId, esAdmin);
                 return Ok(detalles);
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
