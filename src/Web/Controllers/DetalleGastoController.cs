@@ -1,4 +1,3 @@
-using System;
 using System.Security.Claims;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -18,7 +17,9 @@ namespace Web.Controllers
             _serviceDetalleGasto = serviceDetalleGasto;
         }
 
+        // Cualquier participante del viaje puede ver los detalles de un gasto
         [HttpGet("gasto/{gastoId:int}")]
+        // [Authorize(Roles = "Admin,User")]
         public IActionResult GetPorGasto(int gastoId)
         {
             try
@@ -29,14 +30,8 @@ namespace Web.Controllers
                 var detalles = _serviceDetalleGasto.ObtenerDetallesPorGasto(gastoId, userId, esAdmin);
                 return Ok(detalles);
             }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
     }
 }

@@ -13,5 +13,11 @@ namespace Domain.Entities
         // Propiedades de navegación
         public Gasto? Gasto { get; set; }
         public ParticipanteViaje? Participante { get; set; }
+        public DetalleGasto(int participanteId, decimal montoDebe, decimal montoPagado)
+        {
+            ParticipanteId = participanteId;
+            MontoDebe = montoDebe;
+            MontoPagado = montoPagado;
+        }
     }
 }

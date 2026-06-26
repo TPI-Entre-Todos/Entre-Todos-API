@@ -5,16 +5,21 @@ namespace Application.Interfaces
 {
     public interface IGastoService
     {
-        // Creación por tipo de división
-        GastoDto CrearIgualitario(GastoIgualitarioRequest dto, int userId, bool esAdmin);
-        GastoDto CrearPorPorcentaje(GastoPorPorcentajeRequest dto, int userId, bool esAdmin);
-        GastoDto CrearPersonalizado(GastoPersonalizadoRequest dto, int userId, bool esAdmin);
+        // ─── Creación como User (participanteId resuelto desde userId del token) ──
+        GastoDto CrearIgualitarioComoUser(GastoIgualitarioRequest dto, int userId);
+        GastoDto CrearPorPorcentajeComoUser(GastoPorPorcentajeRequest dto, int userId);
+        GastoDto CrearPersonalizadoComoUser(GastoPersonalizadoRequest dto, int userId);
 
-        // Consulta
+        // ─── Creación como Admin (participanteId especificado en el request) ──────
+        GastoDto CrearIgualitarioComoAdmin(GastoIgualitarioAdminRequest dto);
+        GastoDto CrearPorPorcentajeComoAdmin(GastoPorPorcentajeAdminRequest dto);
+        GastoDto CrearPersonalizadoComoAdmin(GastoPersonalizadoAdminRequest dto);
+
+        // ─── Consulta ─────────────────────────────────────────────────────────────
         List<GastoDto> ObtenerGastosPorViaje(int viajeId, int userId, bool esAdmin);
         GastoDto? ObtenerGastoPorId(int id, int userId, bool esAdmin);
 
-        // Modificación y baja
+        // ─── Modificación y baja ──────────────────────────────────────────────────
         GastoDto ActualizarGasto(int id, GastoConDetallesRequest dto, int userId, bool esAdmin);
         void EliminarGasto(int id, int userId, bool esAdmin);
     }

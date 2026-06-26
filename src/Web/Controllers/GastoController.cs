@@ -8,7 +8,6 @@ namespace Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class GastoController : ControllerBase
     {
         private readonly IGastoService _gastoService;
@@ -18,15 +17,18 @@ namespace Web.Controllers
             _gastoService = gastoService;
         }
 
-        // ─── Creación por tipo de división ────────────────────────────────────────
+        // ─── Creación como User ───────────────────────────────────────────────────
+        // El participante que pagó se resuelve automáticamente desde el token JWT.
+        // No hace falta enviar ParticipanteId en el body.
 
         [HttpPost("igualitario")]
+        [Authorize(Roles = "User")]
         public IActionResult PostIgualitario([FromBody] GastoIgualitarioRequest dto)
         {
             try
             {
-                var (userId, esAdmin) = ObtenerIdentidad();
-                var resultado = _gastoService.CrearIgualitario(dto, userId, esAdmin);
+                int userId = ObtenerUserId();
+                var resultado = _gastoService.CrearIgualitarioComoUser(dto, userId);
                 return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
             }
             catch (UnauthorizedAccessException) { return Forbid(); }
@@ -34,12 +36,13 @@ namespace Web.Controllers
         }
 
         [HttpPost("porcentaje")]
+        [Authorize(Roles = "User")]
         public IActionResult PostPorPorcentaje([FromBody] GastoPorPorcentajeRequest dto)
         {
             try
             {
-                var (userId, esAdmin) = ObtenerIdentidad();
-                var resultado = _gastoService.CrearPorPorcentaje(dto, userId, esAdmin);
+                int userId = ObtenerUserId();
+                var resultado = _gastoService.CrearPorPorcentajeComoUser(dto, userId);
                 return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
             }
             catch (UnauthorizedAccessException) { return Forbid(); }
@@ -47,21 +50,62 @@ namespace Web.Controllers
         }
 
         [HttpPost("personalizado")]
+        [Authorize(Roles = "User")]
         public IActionResult PostPersonalizado([FromBody] GastoPersonalizadoRequest dto)
         {
             try
             {
-                var (userId, esAdmin) = ObtenerIdentidad();
-                var resultado = _gastoService.CrearPersonalizado(dto, userId, esAdmin);
+                int userId = ObtenerUserId();
+                var resultado = _gastoService.CrearPersonalizadoComoUser(dto, userId);
                 return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
             }
             catch (UnauthorizedAccessException) { return Forbid(); }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
+        // ─── Creación como Admin ──────────────────────────────────────────────────
+        // El admin especifica explícitamente el ParticipanteId de quien pagó.
+
+        [HttpPost("admin/igualitario")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult PostIgualitarioAdmin([FromBody] GastoIgualitarioAdminRequest dto)
+        {
+            try
+            {
+                var resultado = _gastoService.CrearIgualitarioComoAdmin(dto);
+                return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpPost("admin/porcentaje")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult PostPorPorcentajeAdmin([FromBody] GastoPorPorcentajeAdminRequest dto)
+        {
+            try
+            {
+                var resultado = _gastoService.CrearPorPorcentajeComoAdmin(dto);
+                return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpPost("admin/personalizado")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult PostPersonalizadoAdmin([FromBody] GastoPersonalizadoAdminRequest dto)
+        {
+            try
+            {
+                var resultado = _gastoService.CrearPersonalizadoComoAdmin(dto);
+                return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
         // ─── Consulta ─────────────────────────────────────────────────────────────
 
         [HttpGet("{id:int}")]
+        [Authorize(Roles = "Admin,User")]
         public IActionResult GetById(int id)
         {
             try
@@ -75,6 +119,7 @@ namespace Web.Controllers
         }
 
         [HttpGet("viaje/{viajeId:int}")]
+        [Authorize(Roles = "Admin,User")]
         public IActionResult GetPorViaje(int viajeId)
         {
             try
@@ -88,6 +133,7 @@ namespace Web.Controllers
         // ─── Actualización y baja ─────────────────────────────────────────────────
 
         [HttpPut("{id:int}")]
+        [Authorize(Roles = "Admin,User")]
         public IActionResult Put(int id, [FromBody] GastoConDetallesRequest dto)
         {
             try
@@ -100,6 +146,7 @@ namespace Web.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin,User")]
         public IActionResult Delete(int id)
         {
             try
@@ -112,7 +159,10 @@ namespace Web.Controllers
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 
-        // ─── Helper ───────────────────────────────────────────────────────────────
+        // ─── Helpers ──────────────────────────────────────────────────────────────
+
+        private int ObtenerUserId() =>
+            int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
         private (int userId, bool esAdmin) ObtenerIdentidad()
         {

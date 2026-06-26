@@ -18,7 +18,7 @@ namespace Domain.Entities
         public ParticipanteViaje? Participante { get; set; }
         public ICollection<DetalleGasto> DetallesGasto { get; set; } = [];
 
-        public Gasto(int viajeId, int participanteId, string descripcion, decimal monto, TipoDivision tipoDivision)
+        public Gasto(int viajeId, int participanteId, string descripcion, decimal monto, TipoDivision tipoDivision, string? categoria, string? comprobante)
         {
             ViajeId = viajeId;
             ParticipanteId = participanteId;
@@ -26,6 +26,8 @@ namespace Domain.Entities
             Monto = monto;
             TipoDivision = tipoDivision;
             Fecha = DateTime.UtcNow;
+            Categoria = categoria;
+            Comprobante = comprobante;
         }
 
         public Gasto() { }
