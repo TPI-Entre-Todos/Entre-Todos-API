@@ -9,6 +9,7 @@ using Microsoft.OpenApi;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Application;
+using Web.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,7 @@ if (!builder.Environment.IsDevelopment())
 
 
 builder.Services.AddControllers();
+builder.Services.AddTransient<GlobalExceptionHandlingMiddleware>();
 
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IViajeRepository, ViajeRepository>();
@@ -136,6 +138,8 @@ else
     });
     app.MapOpenApi();
 }
+
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

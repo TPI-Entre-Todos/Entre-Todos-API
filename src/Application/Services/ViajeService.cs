@@ -2,6 +2,7 @@ using Application.Interfaces;
 using Application.Models;
 using Application.Models.Requests;
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Interfaces;
 
 namespace Application.Services
@@ -54,14 +55,15 @@ namespace Application.Services
         public ViajeDto? GetById(int id, int userId, bool esAdmin)
         {
             var viaje = _viajeRepository.GetById(id);
-            if (viaje == null) return null;
+            if (viaje == null)
+                throw new NotFoundException("Viaje no encontrado.");
 
             if (!esAdmin)
             {
                 // Verificar que el usuario es participante del viaje
                 var participante = _participanteViajeRepository.GetByIds(userId, id);
                 if (participante == null)
-                    throw new UnauthorizedAccessException("No estás autorizado para ver este viaje.");
+                    throw new UnauthorizedException("No estás autorizado para ver este viaje.");
             }
 
             return ViajeDto.Create(viaje);

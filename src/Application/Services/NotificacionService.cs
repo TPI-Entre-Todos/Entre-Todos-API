@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Application.Models;
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Interfaces;
 
 namespace Application
@@ -35,7 +36,7 @@ namespace Application
         public void MarcarComoLeida(int id)
         {
             var notificacion = _notificacionRepository.GetById(id);
-            if (notificacion == null) throw new Exception("Notificación no encontrada.");
+            if (notificacion == null) throw new NotFoundException("Notificación no encontrada.");
 
             notificacion.Leida = true;
             _notificacionRepository.Update(notificacion);
