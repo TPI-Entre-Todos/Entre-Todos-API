@@ -6,6 +6,7 @@ namespace Domain.Interfaces
     public interface IGastoRepository
     {
         Gasto GetById(int id);
+        List<Gasto> GetAll();
         List<Gasto> GetByViajeId(int viajeId);
         Gasto Add(Gasto entity);
         Gasto AddWithDetalles(Gasto gasto, Dictionary<int, decimal> saldoChanges);

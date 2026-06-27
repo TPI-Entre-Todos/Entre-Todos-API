@@ -22,6 +22,13 @@ namespace Infrastructure.Data
                 .FirstOrDefault(g => g.Id == id);
         }
 
+        public List<Gasto> GetAll()
+        {
+            return _context.Gastos
+                .Include(g => g.DetallesGasto)
+                .ToList();
+        }
+
         public List<Gasto> GetByViajeId(int viajeId)
         {
             return _context.Gastos

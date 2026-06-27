@@ -117,6 +117,22 @@ namespace Application.Services
 
         // ─── Consulta ─────────────────────────────────────────────────────────────
 
+        public List<GastoDto> ObtenerTodos(int userId, bool esAdmin)
+        {
+            var gastos = _gastoRepository.GetAll();
+
+            if (!esAdmin)
+            {
+                var viajesDelUsuario = _participanteViajeRepository.GetByUsuarioId(userId)
+                    .Select(pv => pv.ViajeId)
+                    .ToList();
+
+                gastos = gastos.Where(g => viajesDelUsuario.Contains(g.ViajeId)).ToList();
+            }
+
+            return GastoDto.CreateList(gastos);
+        }
+
         public List<GastoDto> ObtenerGastosPorViaje(int viajeId, int userId, bool esAdmin)
         {
             ValidarParticipanteDelViaje(viajeId, userId, esAdmin);
@@ -341,11 +357,33 @@ namespace Application.Services
             gastoExistente.Comprobante = comprobante;
             if (fecha.HasValue) gastoExistente.Fecha = fecha.Value;
 
-            gastoExistente.DetallesGasto.Clear();
+            // Obtener DetallesGasto actuales indexados por ParticipanteId
+            var detallesActuales = gastoExistente.DetallesGasto.ToDictionary(d => d.ParticipanteId);
+
+            // Actualizar DetallesGasto existentes y crear nuevos
             foreach (var (participanteId, montoDebe) in montosNuevos)
             {
-                decimal montoPagado = participanteId == nuevoPagadorId ? montoDebe : 0;
-                gastoExistente.DetallesGasto.Add(new DetalleGasto(participanteId, montoDebe, montoPagado));
+                if (detallesActuales.TryGetValue(participanteId, out var detalleExistente))
+                {
+                    detalleExistente.MontoDebe = montoDebe;
+                    detalleExistente.MontoPagado = participanteId == nuevoPagadorId ? montoDebe : 0;
+                }
+                else
+                {
+                    decimal montoPagado = participanteId == nuevoPagadorId ? montoDebe : 0;
+                    gastoExistente.DetallesGasto.Add(new DetalleGasto(participanteId, montoDebe, montoPagado));
+                }
+            }
+
+            // Eliminar DetallesGasto de participantes que ya no están en la nueva división
+            var participantesAEliminar = detallesActuales.Keys
+                .Where(id => !montosNuevos.ContainsKey(id))
+                .ToList();
+
+            foreach (var participanteId in participantesAEliminar)
+            {
+                var detalleAEliminar = gastoExistente.DetallesGasto.First(d => d.ParticipanteId == participanteId);
+                gastoExistente.DetallesGasto.Remove(detalleAEliminar);
             }
 
             return GastoDto.Create(_gastoRepository.UpdateWithDetalles(gastoExistente, saldoReversal));

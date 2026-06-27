@@ -104,6 +104,18 @@ namespace Web.Controllers
 
         // ─── Consulta ─────────────────────────────────────────────────────────────
 
+        [HttpGet]
+        [Authorize(Roles = "Admin,User")]
+        public IActionResult GetAll()
+        {
+            try
+            {
+                var (userId, esAdmin) = ObtenerIdentidad();
+                return Ok(_gastoService.ObtenerTodos(userId, esAdmin));
+            }
+            catch (UnauthorizedAccessException) { return Forbid(); }
+        }
+
         [HttpGet("{id:int}")]
         [Authorize(Roles = "Admin,User")]
         public IActionResult GetById(int id)

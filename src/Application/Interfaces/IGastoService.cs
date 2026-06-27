@@ -16,6 +16,7 @@ namespace Application.Interfaces
         GastoDto CrearPersonalizadoComoAdmin(GastoPersonalizadoAdminRequest dto);
 
         // ─── Consulta ─────────────────────────────────────────────────────────────
+        List<GastoDto> ObtenerTodos(int userId, bool esAdmin);
         List<GastoDto> ObtenerGastosPorViaje(int viajeId, int userId, bool esAdmin);
         GastoDto? ObtenerGastoPorId(int id, int userId, bool esAdmin);
 
