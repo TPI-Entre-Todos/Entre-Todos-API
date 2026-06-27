@@ -8,6 +8,6 @@ namespace Application
     {
         NotificacionDto CrearNotificacion(NotificacionCreateDto dto);
         List<NotificacionDto> ObtenerPorUsuario(int usuarioId);
-        void MarcarComoLeida(int id);
+        void MarcarComoLeida(int id, int usuarioId);
     }
 }
