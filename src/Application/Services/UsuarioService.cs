@@ -1,5 +1,6 @@
 
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Interfaces;
 using Application.Interfaces;
 using Application.Models.Requests;
@@ -26,6 +27,9 @@ namespace Application.Services
         public UsuarioDto GetById(int id)
         {
             Usuario? usuario = _usuarioRepository.GetById(id);
+            if (usuario == null)
+                throw new NotFoundException("Usuario no encontrado.");
+
             return UsuarioDto.Create(usuario);
         }
 
@@ -39,15 +43,16 @@ namespace Application.Services
         public UsuarioDto Update(int id, UsuarioRequest request)
         {
             Usuario? existing = _usuarioRepository.GetById(id);
-            if (existing != null)
-            {
-                if (!string.IsNullOrEmpty(request.Nombre))
-                    existing.Nombre = request.Nombre;
-                if (!string.IsNullOrEmpty(request.Email))
-                    existing.Email = request.Email;
-                if (!string.IsNullOrEmpty(request.Password))
-                    existing.Password = request.Password;
-            }
+            if (existing == null)
+                throw new NotFoundException("Usuario no encontrado.");
+
+            if (!string.IsNullOrEmpty(request.Nombre))
+                existing.Nombre = request.Nombre;
+            if (!string.IsNullOrEmpty(request.Email))
+                existing.Email = request.Email;
+            if (!string.IsNullOrEmpty(request.Password))
+                existing.Password = request.Password;
+
             return UsuarioDto.Create(_usuarioRepository.Update(existing));
         }
 

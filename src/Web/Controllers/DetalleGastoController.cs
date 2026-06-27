@@ -19,9 +19,9 @@ namespace Web.Controllers
 
         // Cualquier participante del viaje puede ver los detalles de un gasto
         [HttpGet("gasto/{gastoId:int}")]
-        // [Authorize(Roles = "Admin,User")]
         public IActionResult GetPorGasto(int gastoId)
         {
+
             try
             {
                 int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -32,6 +32,7 @@ namespace Web.Controllers
             }
             catch (UnauthorizedAccessException) { return Forbid(); }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
+
         }
     }
 }

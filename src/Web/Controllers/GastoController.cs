@@ -39,6 +39,7 @@ namespace Web.Controllers
         [Authorize(Roles = "User")]
         public IActionResult PostPorPorcentaje([FromBody] GastoPorPorcentajeRequest dto)
         {
+
             try
             {
                 int userId = ObtenerUserId();
@@ -47,6 +48,7 @@ namespace Web.Controllers
             }
             catch (UnauthorizedAccessException) { return Forbid(); }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
+
         }
 
         [HttpPost("personalizado")]
@@ -242,6 +244,7 @@ namespace Web.Controllers
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin";
             return (userId, esAdmin);
+
         }
     }
 }

@@ -1,5 +1,6 @@
 using Application.Interfaces;
 using Application.Models.Requests;
+using Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Web.Controllers;
@@ -23,7 +24,7 @@ public class AuthenticationController : ControllerBase
         var token = _customAuthenticationService.Autenticar(authenticationRequest);
         if (token == null)
         {
-            return Unauthorized("Credenciales inválidas");
+            throw new UnauthorizedException("Credenciales inválidas");
         }
         return Ok(token);
     }

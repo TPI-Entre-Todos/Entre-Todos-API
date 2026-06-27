@@ -3,6 +3,9 @@ using Application.Models;
 using Application.Models.Requests;
 using Domain.Entities;
 using Domain.Enums;
+
+using Domain.Exceptions;
+
 using Domain.Interfaces;
 
 namespace Application.Services
@@ -23,9 +26,11 @@ namespace Application.Services
 
         public GastoDto CrearIgualitarioComoUser(GastoIgualitarioRequest dto, int userId)
         {
+
             int participanteId = ResolverParticipanteId(dto.ViajeId, userId);
             ValidarCabecera(dto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.ParticipantesIds);
+
 
             var participantesViaje = ObtenerParticipantesViaje(dto.ViajeId);
             ValidarParticipantesPerteneceViaje(dto.ParticipantesIds, participantesViaje);
@@ -54,10 +59,12 @@ namespace Application.Services
 
         public GastoDto CrearPersonalizadoComoUser(GastoPersonalizadoRequest dto, int userId)
         {
+
             int participanteId = ResolverParticipanteId(dto.ViajeId, userId);
             ValidarCabecera(dto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
             ValidarMontosPersonalizados(dto.Participantes, dto.Monto);
+
 
             var participantesViaje = ObtenerParticipantesViaje(dto.ViajeId);
             ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
