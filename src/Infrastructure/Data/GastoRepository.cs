@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -16,39 +15,91 @@ namespace Infrastructure.Data
             _context = context;
         }
 
-        public async Task<Gasto> GetByIdAsync(int id)
+        public Gasto GetById(int id)
         {
-            return await _context.Gastos
-                .FirstOrDefaultAsync(g => g.Id == id);
+            return _context.Gastos
+                .Include(g => g.DetallesGasto)
+                .FirstOrDefault(g => g.Id == id);
         }
 
-        public async Task<List<Gasto>> GetByViajeIdAsync(int viajeId)
+        public List<Gasto> GetAll()
         {
-            return await _context.Gastos
+            return _context.Gastos
+                .Include(g => g.DetallesGasto)
+                .ToList();
+        }
+
+        public List<Gasto> GetByViajeId(int viajeId)
+        {
+            return _context.Gastos
+                .Include(g => g.DetallesGasto)
                 .Where(g => g.ViajeId == viajeId)
-                .ToListAsync();
+                .ToList();
         }
 
-        public async Task<Gasto> AddAsync(Gasto entity)
+        public Gasto Add(Gasto entity)
         {
-            await _context.Gastos.AddAsync(entity);
-            await _context.SaveChangesAsync();
+            _context.Gastos.Add(entity);
+            _context.SaveChanges();
             return entity;
         }
 
-        public async Task UpdateAsync(Gasto entity)
+        public Gasto AddWithDetalles(Gasto gasto, Dictionary<int, decimal> saldoChanges)
         {
-            _context.Gastos.Update(entity);
-            await _context.SaveChangesAsync();
+            _context.Gastos.Add(gasto);
+            AplicarCambiosSaldo(saldoChanges);
+            _context.SaveChanges();
+            return gasto;
         }
 
-        public async Task DeleteAsync(int id)
+        public Gasto UpdateWithDetalles(Gasto gasto, Dictionary<int, decimal> saldoChanges)
         {
-            var entity = await GetByIdAsync(id);
+            _context.Gastos.Update(gasto);
+            AplicarCambiosSaldo(saldoChanges);
+            _context.SaveChanges();
+            return gasto;
+        }
+
+        public void Delete(int id)
+        {
+            var entity = GetById(id);
             if (entity != null)
             {
                 _context.Gastos.Remove(entity);
-                await _context.SaveChangesAsync();
+                _context.SaveChanges();
+            }
+        }
+
+        public void DeleteWithSaldoReversal(int id)
+        {
+            var entity = GetById(id);
+            if (entity == null) return;
+
+            var saldoReversal = new Dictionary<int, decimal>
+            {
+                [entity.ParticipanteId] = -entity.Monto
+            };
+
+            foreach (var detalle in entity.DetallesGasto)
+            {
+                if (saldoReversal.ContainsKey(detalle.ParticipanteId))
+                    saldoReversal[detalle.ParticipanteId] += detalle.MontoDebe;
+                else
+                    saldoReversal[detalle.ParticipanteId] = detalle.MontoDebe;
+            }
+
+            _context.Gastos.Remove(entity);
+            AplicarCambiosSaldo(saldoReversal);
+            _context.SaveChanges();
+        }
+
+        private void AplicarCambiosSaldo(Dictionary<int, decimal> saldoChanges)
+        {
+            foreach (var (participanteId, delta) in saldoChanges)
+            {
+                var participante = _context.ParticipantesViaje.Find(participanteId);
+                if (participante != null)
+                    participante.SaldoTotal += delta;
             }
         }
     }

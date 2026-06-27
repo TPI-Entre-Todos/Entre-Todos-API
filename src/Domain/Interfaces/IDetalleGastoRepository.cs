@@ -6,11 +6,11 @@ namespace Domain.Interfaces
 {
     public interface IDetalleGastoRepository
     {
-        Task<DetalleGasto> GetByIdAsync(int id);
-        Task<List<DetalleGasto>> GetByGastoIdAsync(int gastoId);
-        Task<List<DetalleGasto>> GetByParticipanteIdAsync(int participanteId);
-        Task<DetalleGasto> AddAsync(DetalleGasto entity);
-        Task AddRangeAsync(List<DetalleGasto> entities); // Para guardar la división de una sola vez
-        Task DeleteAsync(int id);
+        DetalleGasto GetById(int id);
+        List<DetalleGasto> GetByGastoId(int gastoId);
+        List<DetalleGasto> GetByParticipanteId(int participanteId);
+        DetalleGasto Add(DetalleGasto entity);
+        void AddRange(List<DetalleGasto> entities); // Para guardar la división de una sola vez
+        void Delete(int id);
     }
 }

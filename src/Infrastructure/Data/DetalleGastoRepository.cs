@@ -16,45 +16,45 @@ namespace Infrastructure.Data
             _context = context;
         }
 
-        public async Task<DetalleGasto> GetByIdAsync(int id)
+        public DetalleGasto GetById(int id)
         {
-            return await _context.DetallesGasto.FirstOrDefaultAsync(d => d.Id == id);
+            return _context.DetallesGasto.FirstOrDefault(d => d.Id == id);
         }
 
-        public async Task<List<DetalleGasto>> GetByGastoIdAsync(int gastoId)
+        public List<DetalleGasto> GetByGastoId(int gastoId)
         {
-            return await _context.DetallesGasto
+            return _context.DetallesGasto
                 .Where(d => d.GastoId == gastoId)
-                .ToListAsync();
+                .ToList();
         }
 
-        public async Task<List<DetalleGasto>> GetByParticipanteIdAsync(int participanteId)
+        public List<DetalleGasto> GetByParticipanteId(int participanteId)
         {
-            return await _context.DetallesGasto
+            return _context.DetallesGasto
                 .Where(d => d.ParticipanteId == participanteId)
-                .ToListAsync();
+                .ToList();
         }
 
-        public async Task<DetalleGasto> AddAsync(DetalleGasto entity)
+        public DetalleGasto Add(DetalleGasto entity)
         {
-            await _context.DetallesGasto.AddAsync(entity);
-            await _context.SaveChangesAsync();
+            _context.DetallesGasto.Add(entity);
+            _context.SaveChanges();
             return entity;
         }
 
-        public async Task AddRangeAsync(List<DetalleGasto> entities)
+        public void AddRange(List<DetalleGasto> entities)
         {
-            await _context.DetallesGasto.AddRangeAsync(entities);
-            await _context.SaveChangesAsync();
+            _context.DetallesGasto.AddRange(entities);
+            _context.SaveChanges();
         }
 
-        public async Task DeleteAsync(int id)
+        public void Delete(int id)
         {
-            var entity = await GetByIdAsync(id);
+            var entity = GetById(id);
             if (entity != null)
             {
                 _context.DetallesGasto.Remove(entity);
-                await _context.SaveChangesAsync();
+                _context.SaveChanges();
             }
         }
     }

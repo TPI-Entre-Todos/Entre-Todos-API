@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Application.Interfaces;
 using Application.Models;
+using Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 namespace Web.Controllers

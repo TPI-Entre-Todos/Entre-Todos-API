@@ -10,7 +10,7 @@ public class UnauthorizedException : Exception
     {
     }
 
-    public UnauthorizedException() : base("Unauthorized access.")
+    public UnauthorizedException() : base("Usuario no autenticado.")
     {
     }
 }
