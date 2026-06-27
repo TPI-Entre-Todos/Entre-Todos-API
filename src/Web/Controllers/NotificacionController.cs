@@ -3,43 +3,67 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Application;
 using Application.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class NotificacionController : ControllerBase
     {
-        private readonly INotificacionService _service;
+        private readonly INotificacionService _serviceNotificacion;
 
         // Inyectamos usando la interfaz perfectamente desacoplada
-        public NotificacionController(INotificacionService service)
+        public NotificacionController(INotificacionService serviceNotificacion)
         {
-            _service = service;
+            _serviceNotificacion = serviceNotificacion;
         }
 
         // POST: api/Notificacion (Crear una notificación manual/sistema)
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] NotificacionCreateDto dto)
+        [Authorize(Roles = "Admin")]
+        public IActionResult Post([FromBody] NotificacionCreateDto dto)
         {
-            var resultado = await _service.CrearNotificacionAsync(dto);
-            return Ok(resultado);
+            try
+            {
+                var resultado = _serviceNotificacion.CrearNotificacion(dto);
+                return Ok(resultado);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // GET: api/Notificacion/usuario/3 (Traer las alertas de un usuario)
-        [HttpGet("usuario/{usuarioId}")]
-        public async Task<IActionResult> GetPorUsuario(int usuarioId)
+        [HttpGet("usuario/{usuarioId:int}")]
+        public IActionResult GetPorUsuario(int usuarioId)
         {
-            var notificaciones = await _service.ObtenerPorUsuarioAsync(usuarioId);
-            return Ok(notificaciones);
+            try
+            {
+                var notificaciones = _serviceNotificacion.ObtenerPorUsuario(usuarioId);
+                return Ok(notificaciones);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // PUT: api/Notificacion/5/leer (Marcar como leída)
-        [HttpPut("{id}/leer")]
-        public async Task<IActionResult> MarcarLeida(int id)
+        [HttpPut("{id:int}/leer")]
+        public IActionResult MarcarLeida(int id)
         {
-            await _service.MarcarComoLeidaAsync(id);
-            return NoContent();
+            try
+            {
+                _serviceNotificacion.MarcarComoLeida(id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

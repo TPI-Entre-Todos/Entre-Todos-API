@@ -6,9 +6,9 @@ namespace Domain.Interfaces
 {
     public interface INotificacionRepository
     {
-        Task<Notificacion> GetByIdAsync(int id);
-        Task<List<Notificacion>> GetByUsuarioIdAsync(int usuarioId);
-        Task<Notificacion> AddAsync(Notificacion entity);
-        Task UpdateAsync(Notificacion entity);
+        Notificacion GetById(int id);
+        List<Notificacion> GetByUsuarioId(int usuarioId);
+        Notificacion Add(Notificacion entity);
+        void Update(Notificacion entity);
     }
 }
