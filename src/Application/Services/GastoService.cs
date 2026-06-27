@@ -12,9 +12,7 @@ namespace Application.Services
         private readonly IGastoRepository _gastoRepository;
         private readonly IParticipanteViajeRepository _participanteViajeRepository;
 
-        public GastoService(
-            IGastoRepository gastoRepository,
-            IParticipanteViajeRepository participanteViajeRepository)
+        public GastoService(IGastoRepository gastoRepository, IParticipanteViajeRepository participanteViajeRepository)
         {
             _gastoRepository = gastoRepository;
             _participanteViajeRepository = participanteViajeRepository;
@@ -134,54 +132,110 @@ namespace Application.Services
             return GastoDto.Create(gasto);
         }
 
-        // ─── Actualización ────────────────────────────────────────────────────────
+        // ─── Actualización como User ──────────────────────────────────────────────
+        // El participanteId (quién pagó) se resuelve desde el token JWT
 
-        public GastoDto ActualizarGasto(int id, GastoConDetallesRequest dto, int userId, bool esAdmin)
+        public GastoDto ActualizarIgualitarioComoUser(int id, ActualizarGastoIgualitarioRequest dto, int userId)
         {
-            var gastoExistente = _gastoRepository.GetById(id)
-                ?? throw new ArgumentException("El gasto no existe.");
+            var gasto = ObtenerGastoValidado(id);
+            int participanteId = ResolverParticipanteId(gasto.ViajeId, userId);
+            ValidarPermisoModificacion(gasto, userId, esAdmin: false);
+            ValidarCabecera(gasto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
+            ValidarListaNoVacia(dto.ParticipantesIds);
 
-            ValidarPermisoModificacion(gastoExistente, userId, esAdmin);
+            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
+            ValidarParticipantesPerteneceViaje(dto.ParticipantesIds, participantesViaje);
+            ValidarSinDuplicados(dto.ParticipantesIds);
 
-            if (dto.Detalles == null || dto.Detalles.Count == 0)
-                throw new ArgumentException("Debe incluir al menos un participante en la división.");
+            var montosNuevos = CalcularIgualitario(dto.Monto, dto.ParticipantesIds);
+            return PersistirActualizacion(gasto, participanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Igualitario, montosNuevos);
+        }
 
-            var participantesViaje = ObtenerParticipantesViaje(gastoExistente.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.Detalles.Select(d => d.ParticipanteId).ToList(), participantesViaje);
+        public GastoDto ActualizarPorPorcentajeComoUser(int id, ActualizarGastoPorPorcentajeRequest dto, int userId)
+        {
+            var gasto = ObtenerGastoValidado(id);
+            int participanteId = ResolverParticipanteId(gasto.ViajeId, userId);
+            ValidarPermisoModificacion(gasto, userId, esAdmin: false);
+            ValidarCabecera(gasto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
+            ValidarListaNoVacia(dto.Participantes);
+            ValidarPorcentajes(dto.Participantes);
 
-            var saldoReversal = CalcularCambiosSaldo(
-                gastoExistente.ParticipanteId,
-                -gastoExistente.Monto,
-                gastoExistente.DetallesGasto.ToDictionary(d => d.ParticipanteId, d => -d.MontoDebe)
-            );
+            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
+            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
+            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
 
-            var montosNuevos = CalcularMontosDesdeRequest(dto.TipoDivision, dto.Monto, dto.Detalles);
-            var saldoNuevo = CalcularCambiosSaldo(dto.ParticipanteId, dto.Monto, montosNuevos);
+            var montosNuevos = CalcularPorPorcentaje(dto.Monto, dto.Participantes);
+            return PersistirActualizacion(gasto, participanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.PorPorcentaje, montosNuevos);
+        }
 
-            foreach (var (participanteId, delta) in saldoNuevo)
-            {
-                if (saldoReversal.ContainsKey(participanteId))
-                    saldoReversal[participanteId] += delta;
-                else
-                    saldoReversal[participanteId] = delta;
-            }
+        public GastoDto ActualizarPersonalizadoComoUser(int id, ActualizarGastoPersonalizadoRequest dto, int userId)
+        {
+            var gasto = ObtenerGastoValidado(id);
+            int participanteId = ResolverParticipanteId(gasto.ViajeId, userId);
+            ValidarPermisoModificacion(gasto, userId, esAdmin: false);
+            ValidarCabecera(gasto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
+            ValidarListaNoVacia(dto.Participantes);
+            ValidarMontosPersonalizados(dto.Participantes, dto.Monto);
 
-            gastoExistente.ParticipanteId = dto.ParticipanteId;
-            gastoExistente.Descripcion = dto.Descripcion;
-            gastoExistente.Monto = dto.Monto;
-            gastoExistente.TipoDivision = dto.TipoDivision;
-            gastoExistente.Categoria = dto.Categoria;
-            gastoExistente.Comprobante = dto.Comprobante;
-            if (dto.Fecha.HasValue) gastoExistente.Fecha = dto.Fecha.Value;
+            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
+            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
+            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
 
-            gastoExistente.DetallesGasto.Clear();
-            foreach (var (participanteId, monto) in montosNuevos)
-            {
-                decimal montoPagado = participanteId == dto.ParticipanteId ? monto : 0;
-                gastoExistente.DetallesGasto.Add(new DetalleGasto(participanteId, monto, montoPagado));
-            }
+            var montosNuevos = dto.Participantes.ToDictionary(p => p.ParticipanteId, p => p.Monto);
+            return PersistirActualizacion(gasto, participanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Personalizado, montosNuevos);
+        }
 
-            return GastoDto.Create(_gastoRepository.UpdateWithDetalles(gastoExistente, saldoReversal));
+        // ─── Actualización como Admin ─────────────────────────────────────────────
+        // El participanteId viene explícito en el request
+
+        public GastoDto ActualizarIgualitarioComoAdmin(int id, ActualizarGastoIgualitarioAdminRequest dto)
+        {
+            var gasto = ObtenerGastoValidado(id);
+            ValidarCabecera(gasto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
+            ValidarListaNoVacia(dto.ParticipantesIds);
+
+            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
+            ValidarParticipantesPerteneceViaje(dto.ParticipantesIds, participantesViaje);
+            ValidarSinDuplicados(dto.ParticipantesIds);
+
+            var montosNuevos = CalcularIgualitario(dto.Monto, dto.ParticipantesIds);
+            return PersistirActualizacion(gasto, dto.ParticipanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Igualitario, montosNuevos);
+        }
+
+        public GastoDto ActualizarPorPorcentajeComoAdmin(int id, ActualizarGastoPorPorcentajeAdminRequest dto)
+        {
+            var gasto = ObtenerGastoValidado(id);
+            ValidarCabecera(gasto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
+            ValidarListaNoVacia(dto.Participantes);
+            ValidarPorcentajes(dto.Participantes);
+
+            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
+            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
+            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
+
+            var montosNuevos = CalcularPorPorcentaje(dto.Monto, dto.Participantes);
+            return PersistirActualizacion(gasto, dto.ParticipanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.PorPorcentaje, montosNuevos);
+        }
+
+        public GastoDto ActualizarPersonalizadoComoAdmin(int id, ActualizarGastoPersonalizadoAdminRequest dto)
+        {
+            var gasto = ObtenerGastoValidado(id);
+            ValidarCabecera(gasto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
+            ValidarListaNoVacia(dto.Participantes);
+            ValidarMontosPersonalizados(dto.Participantes, dto.Monto);
+
+            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
+            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
+            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
+
+            var montosNuevos = dto.Participantes.ToDictionary(p => p.ParticipanteId, p => p.Monto);
+            return PersistirActualizacion(gasto, dto.ParticipanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Personalizado, montosNuevos);
         }
 
         // ─── Baja ─────────────────────────────────────────────────────────────────
@@ -231,34 +285,6 @@ namespace Application.Services
 
             return resultado;
         }
-
-        private static Dictionary<int, decimal> CalcularMontosDesdeRequest(
-            TipoDivision tipo, decimal montoTotal, List<DetalleGastoItemRequest> detalles)
-        {
-            return tipo switch
-            {
-                TipoDivision.Igualitario =>
-                    CalcularIgualitario(montoTotal, detalles.Select(d => d.ParticipanteId).ToList()),
-
-                TipoDivision.PorPorcentaje =>
-                    CalcularPorPorcentaje(montoTotal, detalles
-                        .Select(d => new ParticipantePorcentajeItem
-                        {
-                            ParticipanteId = d.ParticipanteId,
-                            Porcentaje = d.Porcentaje ?? throw new ArgumentException(
-                                $"Falta porcentaje para participante {d.ParticipanteId}.")
-                        }).ToList()),
-
-                TipoDivision.Personalizado =>
-                    detalles.ToDictionary(
-                        d => d.ParticipanteId,
-                        d => d.MontoIndividual ?? throw new ArgumentException(
-                            $"Falta monto para participante {d.ParticipanteId}.")),
-
-                _ => throw new ArgumentException("Tipo de división no reconocido.")
-            };
-        }
-
         private static Dictionary<int, decimal> CalcularCambiosSaldo(
             int pagadorId, decimal montoTotal, Dictionary<int, decimal> montosIndividuales)
         {
@@ -276,6 +302,60 @@ namespace Application.Services
         }
 
         // ─── Persistencia compartida ──────────────────────────────────────────────
+
+        private GastoDto PersistirActualizacion(
+            Gasto gastoExistente, int nuevoPagadorId, string descripcion, decimal monto,
+            DateTime? fecha, string? categoria, string? comprobante,
+            TipoDivision tipoDivision, Dictionary<int, decimal> montosNuevos)
+        {
+            var pagador = _participanteViajeRepository.GetById(nuevoPagadorId)
+                ?? throw new ArgumentException("El participante que pagó no existe.");
+
+            if (pagador.ViajeId != gastoExistente.ViajeId)
+                throw new ArgumentException("El participante que pagó no pertenece a este viaje.");
+
+            // Revertir el saldo del gasto anterior
+            var saldoReversal = CalcularCambiosSaldo(
+                gastoExistente.ParticipanteId,
+                -gastoExistente.Monto,
+                gastoExistente.DetallesGasto.ToDictionary(d => d.ParticipanteId, d => -d.MontoDebe)
+            );
+
+            // Calcular el saldo del gasto nuevo
+            var saldoNuevo = CalcularCambiosSaldo(nuevoPagadorId, monto, montosNuevos);
+
+            // Combinar reversión + nuevo en un solo pase
+            foreach (var (participanteId, delta) in saldoNuevo)
+            {
+                if (saldoReversal.ContainsKey(participanteId))
+                    saldoReversal[participanteId] += delta;
+                else
+                    saldoReversal[participanteId] = delta;
+            }
+
+            gastoExistente.ParticipanteId = nuevoPagadorId;
+            gastoExistente.Descripcion = descripcion;
+            gastoExistente.Monto = monto;
+            gastoExistente.TipoDivision = tipoDivision;
+            gastoExistente.Categoria = categoria;
+            gastoExistente.Comprobante = comprobante;
+            if (fecha.HasValue) gastoExistente.Fecha = fecha.Value;
+
+            gastoExistente.DetallesGasto.Clear();
+            foreach (var (participanteId, montoDebe) in montosNuevos)
+            {
+                decimal montoPagado = participanteId == nuevoPagadorId ? montoDebe : 0;
+                gastoExistente.DetallesGasto.Add(new DetalleGasto(participanteId, montoDebe, montoPagado));
+            }
+
+            return GastoDto.Create(_gastoRepository.UpdateWithDetalles(gastoExistente, saldoReversal));
+        }
+
+        private Gasto ObtenerGastoValidado(int id)
+        {
+            return _gastoRepository.GetById(id)
+                ?? throw new ArgumentException("El gasto no existe.");
+        }
 
         private GastoDto PersistirGasto(
             int viajeId, int pagadorId, string descripcion, decimal monto,

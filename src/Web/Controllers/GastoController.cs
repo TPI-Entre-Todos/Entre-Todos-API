@@ -130,18 +130,79 @@ namespace Web.Controllers
             catch (UnauthorizedAccessException) { return Forbid(); }
         }
 
-        // ─── Actualización y baja ─────────────────────────────────────────────────
+        // ─── Actualización como User ──────────────────────────────────────────────
 
-        [HttpPut("{id:int}")]
-        [Authorize(Roles = "Admin,User")]
-        public IActionResult Put(int id, [FromBody] GastoConDetallesRequest dto)
+        [HttpPut("{id:int}/igualitario")]
+        [Authorize(Roles = "User")]
+        public IActionResult PutIgualitario(int id, [FromBody] ActualizarGastoIgualitarioRequest dto)
         {
             try
             {
-                var (userId, esAdmin) = ObtenerIdentidad();
-                return Ok(_gastoService.ActualizarGasto(id, dto, userId, esAdmin));
+                int userId = ObtenerUserId();
+                return Ok(_gastoService.ActualizarIgualitarioComoUser(id, dto, userId));
             }
             catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpPut("{id:int}/porcentaje")]
+        [Authorize(Roles = "User")]
+        public IActionResult PutPorPorcentaje(int id, [FromBody] ActualizarGastoPorPorcentajeRequest dto)
+        {
+            try
+            {
+                int userId = ObtenerUserId();
+                return Ok(_gastoService.ActualizarPorPorcentajeComoUser(id, dto, userId));
+            }
+            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpPut("{id:int}/personalizado")]
+        [Authorize(Roles = "User")]
+        public IActionResult PutPersonalizado(int id, [FromBody] ActualizarGastoPersonalizadoRequest dto)
+        {
+            try
+            {
+                int userId = ObtenerUserId();
+                return Ok(_gastoService.ActualizarPersonalizadoComoUser(id, dto, userId));
+            }
+            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        // ─── Actualización como Admin ─────────────────────────────────────────────
+
+        [HttpPut("{id:int}/admin/igualitario")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult PutIgualitarioAdmin(int id, [FromBody] ActualizarGastoIgualitarioAdminRequest dto)
+        {
+            try
+            {
+                return Ok(_gastoService.ActualizarIgualitarioComoAdmin(id, dto));
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpPut("{id:int}/admin/porcentaje")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult PutPorPorcentajeAdmin(int id, [FromBody] ActualizarGastoPorPorcentajeAdminRequest dto)
+        {
+            try
+            {
+                return Ok(_gastoService.ActualizarPorPorcentajeComoAdmin(id, dto));
+            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        }
+
+        [HttpPut("{id:int}/admin/personalizado")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult PutPersonalizadoAdmin(int id, [FromBody] ActualizarGastoPersonalizadoAdminRequest dto)
+        {
+            try
+            {
+                return Ok(_gastoService.ActualizarPersonalizadoComoAdmin(id, dto));
+            }
             catch (ArgumentException ex) { return BadRequest(ex.Message); }
         }
 

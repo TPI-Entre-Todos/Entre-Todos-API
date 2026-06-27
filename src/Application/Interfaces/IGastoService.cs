@@ -19,8 +19,17 @@ namespace Application.Interfaces
         List<GastoDto> ObtenerGastosPorViaje(int viajeId, int userId, bool esAdmin);
         GastoDto? ObtenerGastoPorId(int id, int userId, bool esAdmin);
 
-        // ─── Modificación y baja ──────────────────────────────────────────────────
-        GastoDto ActualizarGasto(int id, GastoConDetallesRequest dto, int userId, bool esAdmin);
+        // ─── Actualización como User (participanteId resuelto desde userId del token) ──
+        GastoDto ActualizarIgualitarioComoUser(int id, ActualizarGastoIgualitarioRequest dto, int userId);
+        GastoDto ActualizarPorPorcentajeComoUser(int id, ActualizarGastoPorPorcentajeRequest dto, int userId);
+        GastoDto ActualizarPersonalizadoComoUser(int id, ActualizarGastoPersonalizadoRequest dto, int userId);
+
+        // ─── Actualización como Admin (participanteId especificado en el request) ──
+        GastoDto ActualizarIgualitarioComoAdmin(int id, ActualizarGastoIgualitarioAdminRequest dto);
+        GastoDto ActualizarPorPorcentajeComoAdmin(int id, ActualizarGastoPorPorcentajeAdminRequest dto);
+        GastoDto ActualizarPersonalizadoComoAdmin(int id, ActualizarGastoPersonalizadoAdminRequest dto);
+
+        // ─── Baja ─────────────────────────────────────────────────────────────────
         void EliminarGasto(int id, int userId, bool esAdmin);
     }
 }
