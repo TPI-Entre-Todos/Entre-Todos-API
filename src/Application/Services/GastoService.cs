@@ -3,9 +3,7 @@ using Application.Models;
 using Application.Models.Requests;
 using Domain.Entities;
 using Domain.Enums;
-
 using Domain.Exceptions;
-
 using Domain.Interfaces;
 
 namespace Application.Services
@@ -266,7 +264,7 @@ namespace Application.Services
         public void EliminarGasto(int id, int userId, bool esAdmin)
         {
             var gasto = _gastoRepository.GetById(id)
-                ?? throw new ArgumentException("El gasto no existe.");
+                ?? throw new NotFoundException("El gasto no existe.");
 
             ValidarPermisoModificacion(gasto, userId, esAdmin);
             _gastoRepository.DeleteWithSaldoReversal(id);
@@ -332,10 +330,10 @@ namespace Application.Services
             TipoDivision tipoDivision, Dictionary<int, decimal> montosNuevos)
         {
             var pagador = _participanteViajeRepository.GetById(nuevoPagadorId)
-                ?? throw new ArgumentException("El participante que pagó no existe.");
+                ?? throw new BadRequestException("El participante que pagó no existe.");
 
             if (pagador.ViajeId != gastoExistente.ViajeId)
-                throw new ArgumentException("El participante que pagó no pertenece a este viaje.");
+                throw new BadRequestException("El participante que pagó no pertenece a este viaje.");
 
             // Revertir el saldo del gasto anterior
             var saldoReversal = CalcularCambiosSaldo(
@@ -399,7 +397,7 @@ namespace Application.Services
         private Gasto ObtenerGastoValidado(int id)
         {
             return _gastoRepository.GetById(id)
-                ?? throw new ArgumentException("El gasto no existe.");
+                ?? throw new BadRequestException("El gasto no existe.");
         }
 
         private GastoDto PersistirGasto(
@@ -408,10 +406,10 @@ namespace Application.Services
             TipoDivision tipoDivision, Dictionary<int, decimal> montosCalculados)
         {
             var pagador = _participanteViajeRepository.GetById(pagadorId)
-                ?? throw new ArgumentException("El participante que pagó no existe.");
+                ?? throw new BadRequestException("El participante que pagó no existe.");
 
             if (pagador.ViajeId != viajeId)
-                throw new ArgumentException("El participante que pagó no pertenece a este viaje.");
+                throw new BadRequestException("El participante que pagó no pertenece a este viaje.");
 
             var gasto = new Gasto(viajeId, pagadorId, descripcion, monto, tipoDivision, categoria, comprobante);
             if (fecha.HasValue) gasto.Fecha = fecha.Value;
@@ -435,7 +433,7 @@ namespace Application.Services
         private int ResolverParticipanteId(int viajeId, int userId)
         {
             var participante = _participanteViajeRepository.GetByIds(userId, viajeId)
-                ?? throw new UnauthorizedAccessException("No pertenecés a este viaje.");
+                ?? throw new Domain.Exceptions.UnauthorizedAccessException("No pertenecés a este viaje.");
             return participante.Id;
         }
 
@@ -444,7 +442,7 @@ namespace Application.Services
             if (esAdmin) return;
             var participante = _participanteViajeRepository.GetByIds(userId, viajeId);
             if (participante == null)
-                throw new UnauthorizedAccessException("No pertenecés a este viaje.");
+                throw new Domain.Exceptions.UnauthorizedAccessException("No pertenecés a este viaje.");
         }
 
         private void ValidarPermisoModificacion(Gasto gasto, int userId, bool esAdmin)
@@ -452,12 +450,12 @@ namespace Application.Services
             if (esAdmin) return;
 
             var participante = _participanteViajeRepository.GetByIds(userId, gasto.ViajeId)
-                ?? throw new UnauthorizedAccessException("No pertenecés a este viaje.");
+                ?? throw new Domain.Exceptions.UnauthorizedAccessException("No pertenecés a este viaje.");
 
             if (participante.EsOrganizador) return;
 
             if (participante.Id != gasto.ParticipanteId)
-                throw new UnauthorizedAccessException("Solo podés modificar tus propios gastos.");
+                throw new Domain.Exceptions.UnauthorizedAccessException("Solo podés modificar tus propios gastos.");
         }
 
         // ─── Validaciones de datos ────────────────────────────────────────────────
@@ -469,36 +467,36 @@ namespace Application.Services
 
         private static void ValidarCabecera(int viajeId, int participanteId, string descripcion, decimal monto)
         {
-            if (viajeId <= 0) throw new ArgumentException("ViajeId inválido.");
-            if (participanteId <= 0) throw new ArgumentException("ParticipanteId inválido.");
-            if (string.IsNullOrWhiteSpace(descripcion)) throw new ArgumentException("La descripción es obligatoria.");
-            if (monto <= 0) throw new ArgumentException("El monto debe ser mayor a cero.");
+            if (viajeId <= 0) throw new BadRequestException("ViajeId inválido.");
+            if (participanteId <= 0) throw new BadRequestException("ParticipanteId inválido.");
+            if (string.IsNullOrWhiteSpace(descripcion)) throw new BadRequestException("La descripción es obligatoria.");
+            if (monto <= 0) throw new BadRequestException("El monto debe ser mayor a cero.");
         }
 
         private static void ValidarListaNoVacia<T>(List<T> lista)
         {
             if (lista == null || lista.Count == 0)
-                throw new ArgumentException("Debe incluir al menos un participante.");
+                throw new BadRequestException("Debe incluir al menos un participante.");
         }
 
         private static void ValidarPorcentajes(List<ParticipantePorcentajeItem> participantes)
         {
             if (participantes.Any(p => p.Porcentaje <= 0))
-                throw new ArgumentException("Todos los porcentajes deben ser mayores a cero.");
+                throw new BadRequestException("Todos los porcentajes deben ser mayores a cero.");
 
             var suma = participantes.Sum(p => p.Porcentaje);
             if (Math.Abs(suma - 100) > 0.01m)
-                throw new ArgumentException($"La suma de los porcentajes debe ser 100. Suma actual: {suma}.");
+                throw new BadRequestException($"La suma de los porcentajes debe ser 100. Suma actual: {suma}.");
         }
 
         private static void ValidarMontosPersonalizados(List<ParticipanteMontoItem> participantes, decimal montoTotal)
         {
             if (participantes.Any(p => p.Monto <= 0))
-                throw new ArgumentException("Todos los montos individuales deben ser mayores a cero.");
+                throw new BadRequestException("Todos los montos individuales deben ser mayores a cero.");
 
             var suma = participantes.Sum(p => p.Monto);
             if (Math.Abs(suma - montoTotal) > 0.01m)
-                throw new ArgumentException($"La suma de los montos individuales ({suma}) debe coincidir con el monto total ({montoTotal}).");
+                throw new BadRequestException($"La suma de los montos individuales ({suma}) debe coincidir con el monto total ({montoTotal}).");
         }
 
         private static void ValidarParticipantesPerteneceViaje(List<int> ids, Dictionary<int, ParticipanteViaje> participantesViaje)
@@ -506,14 +504,14 @@ namespace Application.Services
             foreach (var id in ids)
             {
                 if (!participantesViaje.ContainsKey(id))
-                    throw new ArgumentException($"El participante {id} no pertenece al viaje.");
+                    throw new BadRequestException($"El participante {id} no pertenece al viaje.");
             }
         }
 
         private static void ValidarSinDuplicados(List<int> ids)
         {
             if (ids.Count != ids.Distinct().Count())
-                throw new ArgumentException("No se puede incluir al mismo participante más de una vez.");
+                throw new BadRequestException("No se puede incluir al mismo participante más de una vez.");
         }
     }
 }

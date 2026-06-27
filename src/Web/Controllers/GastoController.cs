@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Application.Interfaces;
 using Application.Models.Requests;
+using Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,8 +32,10 @@ namespace Web.Controllers
                 var resultado = _gastoService.CrearIgualitarioComoUser(dto, userId);
                 return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
             }
-            catch (UnauthorizedAccessException) { return Forbid(); }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (UnauthorizedException) { return Unauthorized(); }
+            catch (Domain.Exceptions.UnauthorizedAccessException) { return Forbid(); }
+            catch (BadRequestException ex) { return BadRequest(ex.Message); }
+            catch (NotFoundException ex) { return NotFound(ex.Message); }
         }
 
         [HttpPost("porcentaje")]
@@ -46,8 +49,10 @@ namespace Web.Controllers
                 var resultado = _gastoService.CrearPorPorcentajeComoUser(dto, userId);
                 return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
             }
-            catch (UnauthorizedAccessException) { return Forbid(); }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (UnauthorizedException) { return Unauthorized(); }
+            catch (Domain.Exceptions.UnauthorizedAccessException) { return Forbid(); }
+            catch (BadRequestException ex) { return BadRequest(ex.Message); }
+            catch (NotFoundException ex) { return NotFound(ex.Message); }
 
         }
 
@@ -61,8 +66,10 @@ namespace Web.Controllers
                 var resultado = _gastoService.CrearPersonalizadoComoUser(dto, userId);
                 return CreatedAtAction(nameof(GetById), new { id = resultado.Id }, resultado);
             }
-            catch (UnauthorizedAccessException) { return Forbid(); }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (UnauthorizedException) { return Unauthorized(); }
+            catch (Domain.Exceptions.UnauthorizedAccessException) { return Forbid(); }
+            catch (BadRequestException ex) { return BadRequest(ex.Message); }
+            catch (NotFoundException ex) { return NotFound(ex.Message); }
         }
 
         // ─── Creación como Admin ──────────────────────────────────────────────────
@@ -115,33 +122,24 @@ namespace Web.Controllers
                 var (userId, esAdmin) = ObtenerIdentidad();
                 return Ok(_gastoService.ObtenerTodos(userId, esAdmin));
             }
-            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (Domain.Exceptions.UnauthorizedAccessException) { return Forbid(); }
         }
 
         [HttpGet("{id:int}")]
         [Authorize(Roles = "Admin,User")]
         public IActionResult GetById(int id)
         {
-            try
-            {
-                var (userId, esAdmin) = ObtenerIdentidad();
-                var gasto = _gastoService.ObtenerGastoPorId(id, userId, esAdmin);
-                if (gasto == null) return NotFound();
-                return Ok(gasto);
-            }
-            catch (UnauthorizedAccessException) { return Forbid(); }
+            var (userId, esAdmin) = ObtenerIdentidad();
+            var gasto = _gastoService.ObtenerGastoPorId(id, userId, esAdmin);
+            return Ok(gasto);
         }
 
         [HttpGet("viaje/{viajeId:int}")]
         [Authorize(Roles = "Admin,User")]
         public IActionResult GetPorViaje(int viajeId)
         {
-            try
-            {
-                var (userId, esAdmin) = ObtenerIdentidad();
-                return Ok(_gastoService.ObtenerGastosPorViaje(viajeId, userId, esAdmin));
-            }
-            catch (UnauthorizedAccessException) { return Forbid(); }
+            var (userId, esAdmin) = ObtenerIdentidad();
+            return Ok(_gastoService.ObtenerGastosPorViaje(viajeId, userId, esAdmin));
         }
 
         // ─── Actualización como User ──────────────────────────────────────────────
@@ -150,39 +148,25 @@ namespace Web.Controllers
         [Authorize(Roles = "User")]
         public IActionResult PutIgualitario(int id, [FromBody] ActualizarGastoIgualitarioRequest dto)
         {
-            try
-            {
-                int userId = ObtenerUserId();
-                return Ok(_gastoService.ActualizarIgualitarioComoUser(id, dto, userId));
-            }
-            catch (UnauthorizedAccessException) { return Forbid(); }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+
+            int userId = ObtenerUserId();
+            return Ok(_gastoService.ActualizarIgualitarioComoUser(id, dto, userId));
         }
 
         [HttpPut("{id:int}/porcentaje")]
         [Authorize(Roles = "User")]
         public IActionResult PutPorPorcentaje(int id, [FromBody] ActualizarGastoPorPorcentajeRequest dto)
         {
-            try
-            {
-                int userId = ObtenerUserId();
-                return Ok(_gastoService.ActualizarPorPorcentajeComoUser(id, dto, userId));
-            }
-            catch (UnauthorizedAccessException) { return Forbid(); }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            int userId = ObtenerUserId();
+            return Ok(_gastoService.ActualizarPorPorcentajeComoUser(id, dto, userId));
         }
 
         [HttpPut("{id:int}/personalizado")]
         [Authorize(Roles = "User")]
         public IActionResult PutPersonalizado(int id, [FromBody] ActualizarGastoPersonalizadoRequest dto)
         {
-            try
-            {
-                int userId = ObtenerUserId();
-                return Ok(_gastoService.ActualizarPersonalizadoComoUser(id, dto, userId));
-            }
-            catch (UnauthorizedAccessException) { return Forbid(); }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            int userId = ObtenerUserId();
+            return Ok(_gastoService.ActualizarPersonalizadoComoUser(id, dto, userId));
         }
 
         // ─── Actualización como Admin ─────────────────────────────────────────────
@@ -191,47 +175,31 @@ namespace Web.Controllers
         [Authorize(Roles = "Admin")]
         public IActionResult PutIgualitarioAdmin(int id, [FromBody] ActualizarGastoIgualitarioAdminRequest dto)
         {
-            try
-            {
-                return Ok(_gastoService.ActualizarIgualitarioComoAdmin(id, dto));
-            }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            return Ok(_gastoService.ActualizarIgualitarioComoAdmin(id, dto));
         }
 
         [HttpPut("{id:int}/admin/porcentaje")]
         [Authorize(Roles = "Admin")]
         public IActionResult PutPorPorcentajeAdmin(int id, [FromBody] ActualizarGastoPorPorcentajeAdminRequest dto)
         {
-            try
-            {
-                return Ok(_gastoService.ActualizarPorPorcentajeComoAdmin(id, dto));
-            }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            return Ok(_gastoService.ActualizarPorPorcentajeComoAdmin(id, dto));
         }
 
         [HttpPut("{id:int}/admin/personalizado")]
         [Authorize(Roles = "Admin")]
         public IActionResult PutPersonalizadoAdmin(int id, [FromBody] ActualizarGastoPersonalizadoAdminRequest dto)
         {
-            try
-            {
-                return Ok(_gastoService.ActualizarPersonalizadoComoAdmin(id, dto));
-            }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+
+            return Ok(_gastoService.ActualizarPersonalizadoComoAdmin(id, dto));
         }
 
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "Admin,User")]
         public IActionResult Delete(int id)
         {
-            try
-            {
-                var (userId, esAdmin) = ObtenerIdentidad();
-                _gastoService.EliminarGasto(id, userId, esAdmin);
-                return NoContent();
-            }
-            catch (UnauthorizedAccessException) { return Forbid(); }
-            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            var (userId, esAdmin) = ObtenerIdentidad();
+            _gastoService.EliminarGasto(id, userId, esAdmin);
+            return NoContent();
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────────

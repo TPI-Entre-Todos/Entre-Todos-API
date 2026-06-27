@@ -30,10 +30,10 @@ namespace Web.Middlewares
             var (statusCode, title, detail) = exception switch
             {
                 BadRequestException ex => (HttpStatusCode.BadRequest, "Bad request", ex.Message),
-                ArgumentException ex => (HttpStatusCode.BadRequest, "Bad request", ex.Message),
                 NotFoundException ex => (HttpStatusCode.NotFound, "Not found", ex.Message),
                 UnauthorizedException ex => (HttpStatusCode.Unauthorized, "Unauthorized", ex.Message),
-                UnauthorizedAccessException ex => (HttpStatusCode.Forbidden, "Forbidden", ex.Message),
+                Domain.Exceptions.UnauthorizedAccessException ex => (HttpStatusCode.Forbidden, "Forbidden", ex.Message),
+                ArgumentException ex => (HttpStatusCode.BadRequest, "Bad request", ex.Message),
                 _ => (HttpStatusCode.InternalServerError, "Server error", "Ocurrio un error inesperado.")
             };
 

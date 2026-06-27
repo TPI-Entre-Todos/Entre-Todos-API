@@ -1,5 +1,6 @@
 using Application.Interfaces;
 using Application.Models;
+using Domain.Exceptions;
 using Domain.Interfaces;
 
 namespace Application.Services
@@ -23,15 +24,13 @@ namespace Application.Services
         public List<DetalleGastoDto> ObtenerDetallesPorGasto(int gastoId, int userId, bool esAdmin)
         {
             var gasto = _gastoRepository.GetById(gastoId)
-                ?? throw new ArgumentException("El gasto no existe.");
-
+                ?? throw new NotFoundException("El gasto no existe.");
             if (!esAdmin)
             {
                 var participante = _participanteViajeRepository.GetByIds(userId, gasto.ViajeId);
                 if (participante == null)
-                    throw new UnauthorizedAccessException("No estás autorizado para ver los detalles de este gasto.");
+                    throw new Domain.Exceptions.UnauthorizedAccessException("No estás autorizado para ver los detalles de este gasto.");
             }
-
             var detalles = _detalleRepository.GetByGastoId(gastoId);
             return DetalleGastoDto.CreateList(detalles);
         }
