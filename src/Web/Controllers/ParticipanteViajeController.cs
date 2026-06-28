@@ -13,12 +13,12 @@ namespace Web.Controllers
     [Authorize]
     public class ParticipanteViajeController : ControllerBase
     {
-        private readonly IParticipanteViajeService _service;
+        private readonly IParticipanteViajeService _participanteViajeService;
 
         // Inyectamos el servicio que acabamos de crear
-        public ParticipanteViajeController(IParticipanteViajeService service)
+        public ParticipanteViajeController(IParticipanteViajeService participanteViajeService)
         {
-            _service = service;
+            _participanteViajeService = participanteViajeService;
         }
 
         // POST: api/ParticipanteViaje (Alta / Invitar)
@@ -26,8 +26,8 @@ namespace Web.Controllers
         [Authorize(Roles = "Admin")]
         public IActionResult Add([FromBody] ParticipanteViajeCreateRequest Request)
         {
-                var resultado = _service.RegistrarParticipante(Request);
-                return Ok(resultado);
+            var resultado = _participanteViajeService.RegistrarParticipante(Request);
+            return Ok(resultado);
         }
 
         // GET: api/ParticipanteViaje/viaje/5 (Listar los de un viaje de usario)
@@ -36,7 +36,7 @@ namespace Web.Controllers
         public IActionResult GetPorViaje(int viajeId)
         {
             int userIdClaim = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var participantes = _service.ObtenerPorViaje(viajeId, userIdClaim);
+            var participantes = _participanteViajeService.ObtenerPorViaje(viajeId, userIdClaim);
             return Ok(participantes);
         }
 
@@ -45,7 +45,7 @@ namespace Web.Controllers
         [HttpGet("viaje/Admin{viajeId:int}")]
         public IActionResult GetPorViajeAdmin(int viajeId)
         {
-            var participantes = _service.ObtenerPorViajeAdmin(viajeId);
+            var participantes = _participanteViajeService.ObtenerPorViajeAdmin(viajeId);
             return Ok(participantes);
         }
         // GET: api/ParticipanteViaje (Listar todos los participantes)
@@ -55,16 +55,26 @@ namespace Web.Controllers
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdClaim, out var userId)) return Unauthorized();
             var esAdmin = User.IsInRole("Admin");
-            var participantes = _service.ObtenerTodos(userId, esAdmin);
+            var participantes = _participanteViajeService.ObtenerTodos(userId, esAdmin);
             return Ok(participantes);
         }
+        // PATCH: api/ParticipanteViaje/5/organizador (Cambiar estado de organizador)
+        [HttpPatch("{id:int}/organizador")]
+        public IActionResult CambiarEsOrganizador(int id, [FromBody] bool esOrganizador)
+        {
+            int userIdClaim = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.IsInRole("Admin");
+            var actualizado = _participanteViajeService.CambiarEsOrganizador(id, esOrganizador, userIdClaim, esAdmin);
+            return Ok(actualizado);
+        }
+
         // DELETE: api/ParticipanteViaje/5 (Baja)
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
 
-                _service.EliminarParticipante(id);
-                return NoContent();
+            _participanteViajeService.EliminarParticipante(id);
+            return NoContent();
         }
 
     }

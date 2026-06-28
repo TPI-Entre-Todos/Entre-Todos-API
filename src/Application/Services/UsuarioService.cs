@@ -36,6 +36,13 @@ namespace Application.Services
 
         public UsuarioDto Add(UsuarioRequest request)
         {
+            if (string.IsNullOrEmpty(request.Email))
+                throw new BadRequestException("El email es requerido.");
+
+            var usuarioExistente = _usuarioRepository.GetUserByEmail(request.Email);
+            if (usuarioExistente != null)
+                throw new BadRequestException("El email ya está registrado.");
+
             Usuario usuario = new(request.Nombre, request.Email, request.Password);
             _usuarioRepository.Add(usuario);
             return UsuarioDto.Create(usuario);
@@ -50,7 +57,15 @@ namespace Application.Services
             if (!string.IsNullOrEmpty(request.Nombre))
                 existing.Nombre = request.Nombre;
             if (!string.IsNullOrEmpty(request.Email))
+            {
+                if (existing.Email != request.Email)
+                {
+                    var usuarioExistente = _usuarioRepository.GetUserByEmail(request.Email);
+                    if (usuarioExistente != null)
+                        throw new BadRequestException("El email ya está registrado.");
+                }
                 existing.Email = request.Email;
+            }
             if (!string.IsNullOrEmpty(request.Password))
                 existing.Password = request.Password;
 
