@@ -12,16 +12,21 @@ namespace Application.Services
     {
         private readonly IGastoRepository _gastoRepository;
         private readonly IParticipanteViajeRepository _participanteViajeRepository;
+        private readonly INotificacionRepository _notificacionRepository;
+        private readonly IViajeRepository _viajeRepository;
+        private readonly IUsuarioRepository _usuarioRepository;
 
-        public GastoService(IGastoRepository gastoRepository, IParticipanteViajeRepository participanteViajeRepository)
+        public GastoService(IGastoRepository gastoRepository, IParticipanteViajeRepository participanteViajeRepository, INotificacionRepository notificacionRepository, IViajeRepository viajeRepository, IUsuarioRepository usuarioRepository)
         {
             _gastoRepository = gastoRepository;
             _participanteViajeRepository = participanteViajeRepository;
+            _notificacionRepository = notificacionRepository;
+            _viajeRepository = viajeRepository;
+            _usuarioRepository = usuarioRepository;
         }
 
         // ─── Creación como User ───────────────────────────────────────────────────
         // El participanteId se resuelve buscando al usuario en el viaje
-
         public GastoDto CrearIgualitarioComoUser(GastoIgualitarioRequest dto, int userId)
         {
 
@@ -62,7 +67,6 @@ namespace Application.Services
             ValidarCabecera(dto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
             ValidarMontosPersonalizados(dto.Participantes, dto.Monto);
-
 
             var participantesViaje = ObtenerParticipantesViaje(dto.ViajeId);
             ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
@@ -391,7 +395,11 @@ namespace Application.Services
                 gastoExistente.DetallesGasto.Remove(detalleAEliminar);
             }
 
-            return GastoDto.Create(_gastoRepository.UpdateWithDetalles(gastoExistente, saldoReversal));
+            var gastoActualizado = _gastoRepository.UpdateWithDetalles(gastoExistente, saldoReversal);
+
+            CrearNotificacionesActualizacionGasto(gastoActualizado);
+
+            return GastoDto.Create(gastoActualizado);
         }
 
         private Gasto ObtenerGastoValidado(int id)
@@ -421,7 +429,11 @@ namespace Application.Services
             }
 
             var saldoChanges = CalcularCambiosSaldo(pagadorId, monto, montosCalculados);
-            return GastoDto.Create(_gastoRepository.AddWithDetalles(gasto, saldoChanges));
+            var gastoCreado = _gastoRepository.AddWithDetalles(gasto, saldoChanges);
+
+            CrearNotificacionesGasto(gastoCreado);
+
+            return GastoDto.Create(gastoCreado);
         }
 
         // ─── Autorización ─────────────────────────────────────────────────────────
@@ -459,7 +471,6 @@ namespace Application.Services
         }
 
         // ─── Validaciones de datos ────────────────────────────────────────────────
-
         private Dictionary<int, ParticipanteViaje> ObtenerParticipantesViaje(int viajeId)
         {
             return _participanteViajeRepository.GetByViajeId(viajeId).ToDictionary(p => p.Id);
@@ -512,6 +523,34 @@ namespace Application.Services
         {
             if (ids.Count != ids.Distinct().Count())
                 throw new BadRequestException("No se puede incluir al mismo participante más de una vez.");
+        }
+        private void CrearNotificacionesGasto(Gasto gasto)
+        {
+            var viaje = _viajeRepository.GetById(gasto.ViajeId);
+            var pagador = _usuarioRepository.GetById(gasto.ParticipanteId);
+            var participantesViaje = _participanteViajeRepository.GetByViajeId(gasto.ViajeId);
+
+            var mensaje = $"Usuario {pagador.Nombre} añadio un nuevo gasto en el viaje {viaje.Nombre}";
+            foreach (var participante in participantesViaje)
+            {
+                var notificacion = new Notificacion(participante.UsuarioId, mensaje);
+                _notificacionRepository.Add(notificacion);
+            }
+
+        }
+
+        private void CrearNotificacionesActualizacionGasto(Gasto gasto)
+        {
+            var viaje = _viajeRepository.GetById(gasto.ViajeId);
+            var pagador = _usuarioRepository.GetById(gasto.ParticipanteId);
+            var participantesViaje = _participanteViajeRepository.GetByViajeId(gasto.ViajeId);
+
+            var mensaje = $"Usuario {pagador.Nombre} actualizó un gasto en el viaje {viaje.Nombre}";
+            foreach (var participante in participantesViaje)
+            {
+                var notificacion = new Notificacion(participante.UsuarioId, mensaje);
+                _notificacionRepository.Add(notificacion);
+            }
         }
     }
 }

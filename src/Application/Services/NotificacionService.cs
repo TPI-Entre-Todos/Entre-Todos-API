@@ -33,10 +33,13 @@ namespace Application
             return NotificacionDto.CreateList(lista);
         }
 
-        public void MarcarComoLeida(int id)
+        public void MarcarComoLeida(int id, int usuarioId)
         {
             var notificacion = _notificacionRepository.GetById(id);
             if (notificacion == null) throw new NotFoundException("Notificación no encontrada.");
+
+            if (notificacion.UsuarioId != usuarioId)
+                throw new Domain.Exceptions.UnauthorizedAccessException("No tienes permiso para marcar como leída esta notificación.");
 
             notificacion.Leida = true;
             _notificacionRepository.Update(notificacion);
