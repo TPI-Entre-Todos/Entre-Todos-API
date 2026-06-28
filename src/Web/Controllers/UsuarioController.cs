@@ -22,9 +22,6 @@ namespace Web.Controllers
         [HttpPost]
         public IActionResult Add(UsuarioRequest request)
         {
-            if (request == null)
-                return BadRequest();
-
             var result = _usuarioService.Add(request);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
@@ -42,21 +39,13 @@ namespace Web.Controllers
         public IActionResult GetById(int id)
         {
             var usuario = _usuarioService.GetById(id);
-            if (usuario == null)
-                return NotFound();
             return Ok(usuario);
         }
 
         [HttpPut("{id:int}")]
         public IActionResult Update(int id, UsuarioRequest request)
         {
-            if (request.Nombre == null && request.Email == null && request.Password == null)
-                return BadRequest();
-
             var updated = _usuarioService.Update(id, request);
-            if (updated == null)
-                return NotFound();
-
             return Ok(updated);
         }
 
