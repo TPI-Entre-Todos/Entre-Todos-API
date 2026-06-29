@@ -1,11 +1,24 @@
-namespace Application.Models.Requests;
+using System.ComponentModel.DataAnnotations;
 
-public class PagoRequest
+namespace Application.Models.Requests
 {
-    public int ParticipanteId { get; set; }
-    public int DestinatarioId { get; set; }
-    public int ViajeId { get; set; }
-    public decimal? Monto { get; set; }
-    public string Metodo { get; set; }
-    public string Comprobante { get; set; }
+    public class PagoRequest
+    {
+        [Required]
+        public int? ParticipanteId { get; set; } 
+
+        [Required]
+        public int? DestinatarioId { get; set; } 
+
+        [Required]
+        public int? ViajeId { get; set; }
+
+        [Required]
+        public decimal? Monto { get; set; }
+
+        [Required]
+        public string Metodo { get; set; } = string.Empty;
+
+        public string Comprobante { get; set; } = string.Empty;
+    }
 }
