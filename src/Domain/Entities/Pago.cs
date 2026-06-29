@@ -16,10 +16,11 @@ namespace Domain.Entities
         public string Comprobante { get; set; }
 
         // Propiedades de navegación
-        public Viaje Viaje { get; set; }
-        public ParticipanteViaje Remitente { get; set; } 
-        public ParticipanteViaje Destinatario { get; set; } 
-        
+        public Viaje? Viaje { get; set; }
+        public ParticipanteViaje? Remitente { get; set; }
+        public ParticipanteViaje? Destinatario { get; set; }
+        public ICollection<DetalleGasto> DetallesPagados { get; set; } = [];
+
         public Pago(int remitenteId, int destinatarioId, int viajeId, decimal monto, string metodo, string comprobante)
         {
             RemitenteId = remitenteId;

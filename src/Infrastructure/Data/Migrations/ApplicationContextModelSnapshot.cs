@@ -291,6 +291,21 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Viajes");
                 });
 
+            modelBuilder.Entity("PagosDetallesGasto", b =>
+                {
+                    b.Property<int>("DetallesPagadosId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PagoId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("DetallesPagadosId", "PagoId");
+
+                    b.HasIndex("PagoId");
+
+                    b.ToTable("PagosDetallesGasto");
+                });
+
             modelBuilder.Entity("Domain.Entities.DetalleGasto", b =>
                 {
                     b.HasOne("Domain.Entities.Gasto", "Gasto")
@@ -403,6 +418,21 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Usuario");
 
                     b.Navigation("Viaje");
+                });
+
+            modelBuilder.Entity("PagosDetallesGasto", b =>
+                {
+                    b.HasOne("Domain.Entities.DetalleGasto", null)
+                        .WithMany()
+                        .HasForeignKey("DetallesPagadosId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Pago", null)
+                        .WithMany()
+                        .HasForeignKey("PagoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Entities.Gasto", b =>
