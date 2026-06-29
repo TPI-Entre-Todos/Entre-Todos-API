@@ -167,11 +167,12 @@ Actualmente la API cuenta con:
 - manejo centralizado de excepciones;
 - persistencia con EF Core y MySQL;
 - despliegue orientado a entornos de producción.
+- CI/CD con GitHub Action
 
 ## Mejoras futuras
 
 - agregar pruebas unitarias e de integración;
-- incorporar Docker y CI/CD;
+- incorporar Docker;
 - mejorar la cobertura de validaciones y reglas de negocio;
 - ampliar la observabilidad en producción.
 
