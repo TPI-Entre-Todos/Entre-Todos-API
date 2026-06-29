@@ -67,6 +67,12 @@ namespace Infrastructure.Data
                 .HasForeignKey(p => p.ViajeId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Un Pago puede pagar múltiples DetalleGasto (M:N)
+            modelBuilder.Entity<Pago>()
+                .HasMany(p => p.DetallesPagados)
+                .WithMany()
+                .UsingEntity("PagosDetallesGasto");
+
         }
         private Usuario[] CreateUsuarioSeed()
         {

@@ -6,6 +6,9 @@ namespace Domain.Interfaces
     {
         List<DetalleGasto> GetByGastoId(int gastoId);
         List<DetalleGasto> GetByParticipanteId(int participanteId);
+        DetalleGasto Add(DetalleGasto entity);
+        DetalleGasto Update(DetalleGasto entity);
         void AddRange(List<DetalleGasto> entities);
+        void Delete(int id);
     }
 }

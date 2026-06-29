@@ -16,6 +16,7 @@ public class PagoRepository : GenericRepository<Pago>, IPagoRepository
             .Include(p => p.Remitente)
             .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
+            .Include(p => p.DetallesPagados)
             .ToList();
     }
 
@@ -25,6 +26,7 @@ public class PagoRepository : GenericRepository<Pago>, IPagoRepository
             .Include(p => p.Remitente)
             .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
+            .Include(p => p.DetallesPagados)
             .FirstOrDefault(p => p.Id == id);
     }
 
@@ -54,6 +56,7 @@ public class PagoRepository : GenericRepository<Pago>, IPagoRepository
             .Include(p => p.Remitente)
             .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
+            .Include(p => p.DetallesPagados)
             .Where(p => p.ViajeId == viajeId)
             .ToList();
     }
@@ -64,6 +67,7 @@ public class PagoRepository : GenericRepository<Pago>, IPagoRepository
             .Include(p => p.Remitente)
             .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
+            .Include(p => p.DetallesPagados)
             .Where(p => p.RemitenteId == participanteId)
             .ToList();
     }

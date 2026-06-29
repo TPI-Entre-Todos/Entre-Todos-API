@@ -17,21 +17,30 @@ namespace Web.Controllers
             _pagoService = pagoService;
         }
 
-        [HttpPost]
-        public IActionResult Add(PagoRequest request)
+        [HttpPost("simple")]
+        public IActionResult PagarSimple(PagoSimpleRequest request)
         {
-            if (request == null)
-                return BadRequest("La solicitud no puede ser nula");
-
             try
             {
-                // Dejamos que el servicio haga todo el trabajo sucio de validar
-                var result = _pagoService.Add(request);
+                var result = _pagoService.PagarSimple(request);
                 return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
             }
             catch (ArgumentException ex)
             {
-                // Si el servicio encuentra un error, lo atrapamos acá y devolvemos el mensaje real
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("multiple")]
+        public IActionResult PagarMultiple(PagoMultipleRequest request)
+        {
+            try
+            {
+                var result = _pagoService.PagarMultiple(request);
+                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            }
+            catch (ArgumentException ex)
+            {
                 return BadRequest(ex.Message);
             }
         }
@@ -53,18 +62,26 @@ namespace Web.Controllers
             return Ok(pago);
         }
 
-        [HttpPut("{id:int}")]
-        public IActionResult Update(int id, PagoRequest request)
+        [HttpPut("simple/{id:int}")]
+        public IActionResult ActualizarSimple(int id, PagoSimpleRequest request)
         {
-            if (request == null)
-                return BadRequest("La solicitud no puede ser nula");
-
             try
             {
-                var updated = _pagoService.Update(id, request);
-                if (updated == null)
-                    return NotFound("Pago no encontrado");
+                var updated = _pagoService.ActualizarSimple(id, request);
+                return Ok(updated);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
+        [HttpPut("multiple/{id:int}")]
+        public IActionResult ActualizarMultiple(int id, PagoMultipleRequest request)
+        {
+            try
+            {
+                var updated = _pagoService.ActualizarMultiple(id, request);
                 return Ok(updated);
             }
             catch (ArgumentException ex)
