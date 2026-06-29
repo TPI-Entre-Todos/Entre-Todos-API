@@ -25,103 +25,60 @@ namespace Application.Services
             _usuarioRepository = usuarioRepository;
         }
 
-        // ─── Creación como User ───────────────────────────────────────────────────
-        // El participanteId se resuelve buscando al usuario en el viaje
-        public GastoDto CrearIgualitarioComoUser(GastoIgualitarioRequest dto, int userId)
+        // ─── Creación ─────────────────────────────────────────────────────────────
+        public GastoDto CrearIgualitario(GastoIgualitarioRequest dto, int userId, bool esAdmin)
         {
+            var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
+            var viajeId = participantePagador.ViajeId;
 
-            int participanteId = ResolverParticipanteId(dto.ViajeId, userId);
-            ValidarCabecera(dto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
+            ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.ParticipantesIds);
-
-
-            var participantesViaje = ObtenerParticipantesViaje(dto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.ParticipantesIds, participantesViaje);
             ValidarSinDuplicados(dto.ParticipantesIds);
 
-            var montos = CalcularIgualitario(dto.Monto, dto.ParticipantesIds);
-            return PersistirGasto(dto.ViajeId, participanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Igualitario, montos);
+            var participantesViaje = ObtenerParticipantesViaje(viajeId);
+            ValidarParticipantesPerteneceViaje(dto.ParticipantesIds, participantesViaje);
+
+            var montosCalculados = CalcularIgualitario(dto.Monto, dto.ParticipantesIds);
+            return PersistirGasto(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Igualitario, montosCalculados);
         }
 
-        public GastoDto CrearPorPorcentajeComoUser(GastoPorPorcentajeRequest dto, int userId)
+        public GastoDto CrearPorPorcentaje(GastoPorPorcentajeRequest dto, int userId, bool esAdmin)
         {
-            int participanteId = ResolverParticipanteId(dto.ViajeId, userId);
-            ValidarCabecera(dto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
+            var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
+            var viajeId = participantePagador.ViajeId;
+
+            ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
             ValidarPorcentajes(dto.Participantes);
 
-            var participantesViaje = ObtenerParticipantesViaje(dto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
-            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
+            var participantesViaje = ObtenerParticipantesViaje(viajeId);
+            var participanteIds = dto.Participantes.Select(p => p.ParticipanteId).ToList();
+            ValidarParticipantesPerteneceViaje(participanteIds, participantesViaje);
+            ValidarSinDuplicados(participanteIds);
 
-            var montos = CalcularPorPorcentaje(dto.Monto, dto.Participantes);
-            return PersistirGasto(dto.ViajeId, participanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.PorPorcentaje, montos);
+            var montosCalculados = CalcularPorPorcentaje(dto.Monto, dto.Participantes);
+            return PersistirGasto(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.PorPorcentaje, montosCalculados);
         }
 
-        public GastoDto CrearPersonalizadoComoUser(GastoPersonalizadoRequest dto, int userId)
+        public GastoDto CrearPersonalizado(GastoPersonalizadoRequest dto, int userId, bool esAdmin)
         {
+            var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
+            var viajeId = participantePagador.ViajeId;
 
-            int participanteId = ResolverParticipanteId(dto.ViajeId, userId);
-            ValidarCabecera(dto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
+            ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
             ValidarMontosPersonalizados(dto.Participantes, dto.Monto);
 
-            var participantesViaje = ObtenerParticipantesViaje(dto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
-            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
+            var participantesViaje = ObtenerParticipantesViaje(viajeId);
+            var participanteIds = dto.Participantes.Select(p => p.ParticipanteId).ToList();
+            ValidarParticipantesPerteneceViaje(participanteIds, participantesViaje);
+            ValidarSinDuplicados(participanteIds);
 
-            var montos = dto.Participantes.ToDictionary(p => p.ParticipanteId, p => p.Monto);
-            return PersistirGasto(dto.ViajeId, participanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Personalizado, montos);
-        }
-
-        // ─── Creación como Admin ──────────────────────────────────────────────────
-        // El participanteId viene explícito en el request
-
-        public GastoDto CrearIgualitarioComoAdmin(GastoIgualitarioAdminRequest dto)
-        {
-            ValidarCabecera(dto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
-            ValidarListaNoVacia(dto.ParticipantesIds);
-
-            var participantesViaje = ObtenerParticipantesViaje(dto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.ParticipantesIds, participantesViaje);
-            ValidarSinDuplicados(dto.ParticipantesIds);
-
-            var montos = CalcularIgualitario(dto.Monto, dto.ParticipantesIds);
-            return PersistirGasto(dto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Igualitario, montos);
-        }
-
-        public GastoDto CrearPorPorcentajeComoAdmin(GastoPorPorcentajeAdminRequest dto)
-        {
-            ValidarCabecera(dto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
-            ValidarListaNoVacia(dto.Participantes);
-            ValidarPorcentajes(dto.Participantes);
-
-            var participantesViaje = ObtenerParticipantesViaje(dto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
-            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
-
-            var montos = CalcularPorPorcentaje(dto.Monto, dto.Participantes);
-            return PersistirGasto(dto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.PorPorcentaje, montos);
-        }
-
-        public GastoDto CrearPersonalizadoComoAdmin(GastoPersonalizadoAdminRequest dto)
-        {
-            ValidarCabecera(dto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
-            ValidarListaNoVacia(dto.Participantes);
-            ValidarMontosPersonalizados(dto.Participantes, dto.Monto);
-
-            var participantesViaje = ObtenerParticipantesViaje(dto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
-            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
-
-            var montos = dto.Participantes.ToDictionary(p => p.ParticipanteId, p => p.Monto);
-            return PersistirGasto(dto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Personalizado, montos);
+            var montosCalculados = dto.Participantes.ToDictionary(p => p.ParticipanteId, p => p.Monto);
+            return PersistirGasto(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Personalizado, montosCalculados);
         }
 
         // ─── Consulta ─────────────────────────────────────────────────────────────
@@ -157,110 +114,69 @@ namespace Application.Services
             return GastoDto.Create(gasto);
         }
 
-        // ─── Actualización como User ──────────────────────────────────────────────
-        // El participanteId (quién pagó) se resuelve desde el token JWT
-
-        public GastoDto ActualizarIgualitarioComoUser(int id, ActualizarGastoIgualitarioRequest dto, int userId)
+        // ─── Actualización ────────────────────────────────────────────────────────
+        public GastoDto ActualizarIgualitario(int id, GastoIgualitarioRequest dto, int userId, bool esAdmin)
         {
-            var gasto = ObtenerGastoValidado(id);
-            int participanteId = ResolverParticipanteId(gasto.ViajeId, userId);
-            ValidarPermisoModificacion(gasto, userId, esAdmin: false);
-            ValidarCabecera(gasto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
-            ValidarListaNoVacia(dto.ParticipantesIds);
+            var gastoExistente = ObtenerGastoValidado(id);
+            ValidarPermisoModificacion(gastoExistente, userId, esAdmin);
 
-            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.ParticipantesIds, participantesViaje);
+            var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
+            var viajeId = participantePagador.ViajeId;
+
+            ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
+            ValidarListaNoVacia(dto.ParticipantesIds);
             ValidarSinDuplicados(dto.ParticipantesIds);
 
-            var montosNuevos = CalcularIgualitario(dto.Monto, dto.ParticipantesIds);
-            return PersistirActualizacion(gasto, participanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Igualitario, montosNuevos);
+            var participantesViaje = ObtenerParticipantesViaje(viajeId);
+            ValidarParticipantesPerteneceViaje(dto.ParticipantesIds, participantesViaje);
+
+            var montosCalculados = CalcularIgualitario(dto.Monto, dto.ParticipantesIds);
+            return PersistirActualizacion(gastoExistente, dto.ParticipanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Igualitario, montosCalculados);
         }
 
-        public GastoDto ActualizarPorPorcentajeComoUser(int id, ActualizarGastoPorPorcentajeRequest dto, int userId)
+        public GastoDto ActualizarPorPorcentaje(int id, GastoPorPorcentajeRequest dto, int userId, bool esAdmin)
         {
-            var gasto = ObtenerGastoValidado(id);
-            int participanteId = ResolverParticipanteId(gasto.ViajeId, userId);
-            ValidarPermisoModificacion(gasto, userId, esAdmin: false);
-            ValidarCabecera(gasto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
+            var gastoExistente = ObtenerGastoValidado(id);
+            ValidarPermisoModificacion(gastoExistente, userId, esAdmin);
+
+            var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
+            var viajeId = participantePagador.ViajeId;
+
+            ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
             ValidarPorcentajes(dto.Participantes);
 
-            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
-            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
+            var participantesViaje = ObtenerParticipantesViaje(viajeId);
+            var participanteIds = dto.Participantes.Select(p => p.ParticipanteId).ToList();
+            ValidarParticipantesPerteneceViaje(participanteIds, participantesViaje);
+            ValidarSinDuplicados(participanteIds);
 
-            var montosNuevos = CalcularPorPorcentaje(dto.Monto, dto.Participantes);
-            return PersistirActualizacion(gasto, participanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.PorPorcentaje, montosNuevos);
+            var montosCalculados = CalcularPorPorcentaje(dto.Monto, dto.Participantes);
+            return PersistirActualizacion(gastoExistente, dto.ParticipanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.PorPorcentaje, montosCalculados);
         }
 
-        public GastoDto ActualizarPersonalizadoComoUser(int id, ActualizarGastoPersonalizadoRequest dto, int userId)
+        public GastoDto ActualizarPersonalizado(int id, GastoPersonalizadoRequest dto, int userId, bool esAdmin)
         {
-            var gasto = ObtenerGastoValidado(id);
-            int participanteId = ResolverParticipanteId(gasto.ViajeId, userId);
-            ValidarPermisoModificacion(gasto, userId, esAdmin: false);
-            ValidarCabecera(gasto.ViajeId, participanteId, dto.Descripcion, dto.Monto);
+            var gastoExistente = ObtenerGastoValidado(id);
+            ValidarPermisoModificacion(gastoExistente, userId, esAdmin);
+
+            var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
+            var viajeId = participantePagador.ViajeId;
+
+            ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
             ValidarMontosPersonalizados(dto.Participantes, dto.Monto);
 
-            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
-            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
+            var participantesViaje = ObtenerParticipantesViaje(viajeId);
+            var participanteIds = dto.Participantes.Select(p => p.ParticipanteId).ToList();
+            ValidarParticipantesPerteneceViaje(participanteIds, participantesViaje);
+            ValidarSinDuplicados(participanteIds);
 
-            var montosNuevos = dto.Participantes.ToDictionary(p => p.ParticipanteId, p => p.Monto);
-            return PersistirActualizacion(gasto, participanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Personalizado, montosNuevos);
-        }
-
-        // ─── Actualización como Admin ─────────────────────────────────────────────
-        // El participanteId viene explícito en el request
-
-        public GastoDto ActualizarIgualitarioComoAdmin(int id, ActualizarGastoIgualitarioAdminRequest dto)
-        {
-            var gasto = ObtenerGastoValidado(id);
-            ValidarCabecera(gasto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
-            ValidarListaNoVacia(dto.ParticipantesIds);
-
-            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.ParticipantesIds, participantesViaje);
-            ValidarSinDuplicados(dto.ParticipantesIds);
-
-            var montosNuevos = CalcularIgualitario(dto.Monto, dto.ParticipantesIds);
-            return PersistirActualizacion(gasto, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Igualitario, montosNuevos);
-        }
-
-        public GastoDto ActualizarPorPorcentajeComoAdmin(int id, ActualizarGastoPorPorcentajeAdminRequest dto)
-        {
-            var gasto = ObtenerGastoValidado(id);
-            ValidarCabecera(gasto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
-            ValidarListaNoVacia(dto.Participantes);
-            ValidarPorcentajes(dto.Participantes);
-
-            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
-            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
-
-            var montosNuevos = CalcularPorPorcentaje(dto.Monto, dto.Participantes);
-            return PersistirActualizacion(gasto, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.PorPorcentaje, montosNuevos);
-        }
-
-        public GastoDto ActualizarPersonalizadoComoAdmin(int id, ActualizarGastoPersonalizadoAdminRequest dto)
-        {
-            var gasto = ObtenerGastoValidado(id);
-            ValidarCabecera(gasto.ViajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
-            ValidarListaNoVacia(dto.Participantes);
-            ValidarMontosPersonalizados(dto.Participantes, dto.Monto);
-
-            var participantesViaje = ObtenerParticipantesViaje(gasto.ViajeId);
-            ValidarParticipantesPerteneceViaje(dto.Participantes.Select(p => p.ParticipanteId).ToList(), participantesViaje);
-            ValidarSinDuplicados(dto.Participantes.Select(p => p.ParticipanteId).ToList());
-
-            var montosNuevos = dto.Participantes.ToDictionary(p => p.ParticipanteId, p => p.Monto);
-            return PersistirActualizacion(gasto, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Personalizado, montosNuevos);
+            var montosCalculados = dto.Participantes.ToDictionary(p => p.ParticipanteId, p => p.Monto);
+            return PersistirActualizacion(gastoExistente, dto.ParticipanteId, dto.Descripcion, dto.Monto,
+                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Personalizado, montosCalculados);
         }
 
         // ─── Baja ─────────────────────────────────────────────────────────────────
@@ -439,6 +355,22 @@ namespace Application.Services
         // ─── Autorización ─────────────────────────────────────────────────────────
 
         /// <summary>
+        /// Valida que el ParticipanteId existe.
+        /// Si no es admin, valida que pertenece al usuario autenticado.
+        /// </summary>
+        private ParticipanteViaje ValidarYObtenerParticipante(int participanteId, int userId, bool esAdmin)
+        {
+            var participante = _participanteViajeRepository.GetById(participanteId)
+                ?? throw new BadRequestException("El participante no existe.");
+
+            if (!esAdmin && participante.UsuarioId != userId)
+                throw new Domain.Exceptions.UnauthorizedAccessException(
+                    "No puedes crear un gasto en nombre de otro usuario.");
+
+            return participante;
+        }
+
+        /// <summary>
         /// Resuelve el ParticipanteViaje.Id del usuario autenticado dentro del viaje.
         /// Lanza UnauthorizedAccessException si el usuario no pertenece al viaje.
         /// </summary>
@@ -527,29 +459,43 @@ namespace Application.Services
         private void CrearNotificacionesGasto(Gasto gasto)
         {
             var viaje = _viajeRepository.GetById(gasto.ViajeId);
-            var pagador = _usuarioRepository.GetById(gasto.ParticipanteId);
+            var pagadorParticipante = _participanteViajeRepository.GetById(gasto.ParticipanteId);
+            if (pagadorParticipante == null || viaje == null) return;
+
+            var pagador = _usuarioRepository.GetById(pagadorParticipante.UsuarioId);
+            if (pagador == null) return;
+
             var participantesViaje = _participanteViajeRepository.GetByViajeId(gasto.ViajeId);
 
-            var mensaje = $"Usuario {pagador.Nombre} añadio un nuevo gasto en el viaje {viaje.Nombre}";
+            var mensaje = $"Usuario {pagador.Nombre} añadió un nuevo gasto en el viaje {viaje.Nombre}";
             foreach (var participante in participantesViaje)
             {
-                var notificacion = new Notificacion(participante.UsuarioId, mensaje);
-                _notificacionRepository.Add(notificacion);
+                if (participante.UsuarioId != pagador.Id)
+                {
+                    var notificacion = new Notificacion(participante.UsuarioId, mensaje);
+                    _notificacionRepository.Add(notificacion);
+                }
             }
-
         }
 
         private void CrearNotificacionesActualizacionGasto(Gasto gasto)
         {
             var viaje = _viajeRepository.GetById(gasto.ViajeId);
-            var pagador = _usuarioRepository.GetById(gasto.ParticipanteId);
+            var pagadorParticipante = _participanteViajeRepository.GetById(gasto.ParticipanteId);
+            if (pagadorParticipante == null || viaje == null) return;
+
+            var pagador = _usuarioRepository.GetById(pagadorParticipante.UsuarioId);
+            if (pagador == null) return;
             var participantesViaje = _participanteViajeRepository.GetByViajeId(gasto.ViajeId);
 
             var mensaje = $"Usuario {pagador.Nombre} actualizó un gasto en el viaje {viaje.Nombre}";
             foreach (var participante in participantesViaje)
             {
-                var notificacion = new Notificacion(participante.UsuarioId, mensaje);
-                _notificacionRepository.Add(notificacion);
+                if (participante.UsuarioId != pagador.Id)
+                {
+                    var notificacion = new Notificacion(participante.UsuarioId, mensaje);
+                    _notificacionRepository.Add(notificacion);
+                }
             }
         }
     }
