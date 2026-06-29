@@ -1,6 +1,6 @@
 namespace Application.Models
 {
-    public class ParticipanteViajeCreateDto
+    public class ParticipanteViajeCreateRequest
     {
         public int UsuarioId { get; set; }
         public int ViajeId { get; set; }

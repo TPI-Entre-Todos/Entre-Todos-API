@@ -1,8 +1,9 @@
-using Application.Services;
-using Domain.Entities;
-using Domain.Interfaces;
+using Application.Interfaces;
+using Application.Models.Requests;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+
 namespace Web.Controllers
 {
     [ApiController]
@@ -18,24 +19,31 @@ namespace Web.Controllers
         }
 
         [HttpPost]
-        public IActionResult Add(Viaje viaje)
+        public IActionResult Add([FromBody] ViajeRequest request)
         {
-            var result = _viajeService.Add(viaje);
-            return CreatedAtAction(nameof(Get), result);
+            int userIdClaim = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = _viajeService.Add(request, userIdClaim);
+            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
         [HttpGet]
         public IActionResult Get()
         {
-            var viajes = _viajeService.Get();
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin";
+
+            var viajes = _viajeService.Get(userId, esAdmin);
             return Ok(viajes);
         }
         [HttpGet("{id:int}")]
         public IActionResult GetById([FromRoute] int id)
         {
-            var viajes = _viajeService.GetById(id);
-            return Ok(viajes);
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin"; 
+            var viaje = _viajeService.GetById(id, userId, esAdmin);
+            return Ok(viaje);
         }
+
         [HttpDelete("{id:int}")]
         public IActionResult Delete([FromRoute] int id)
         {

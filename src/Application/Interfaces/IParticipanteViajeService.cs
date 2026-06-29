@@ -1,15 +1,16 @@
-using Application.Models.Requests;
-using Domain.Entities;
 using Application.Models;
 
 namespace Application.Interfaces
 {
     public interface IParticipanteViajeService
     {
-        Task<ParticipanteViajeDto> RegistrarParticipanteAsync(ParticipanteViajeCreateDto dto);
-        Task<List<ParticipanteViajeDto>> ObtenerPorViajeAsync(int viajeId);
-        Task ResponderInvitacionAsync(int id, string nuevoEstado);
-        Task EliminarParticipanteAsync(int id);
+        ParticipanteViajeDto RegistrarParticipante(ParticipanteViajeCreateRequest dto);
+        List<ParticipanteViajeDto> ObtenerPorViaje(int viajeId, int usuarioId);
+
+        List<ParticipanteViajeDto> ObtenerPorViajeAdmin(int viajeId);
+        List<ParticipanteViajeDto> ObtenerTodos(int usuarioId, bool esAdmin);
+        ParticipanteViajeDto CambiarEsOrganizador(int id, bool esOrganizador, int usuarioId, bool esAdmin);
+        void EliminarParticipante(int id);
 
     }
 }

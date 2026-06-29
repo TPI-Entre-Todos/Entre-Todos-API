@@ -1,9 +1,12 @@
 
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Interfaces;
 using Application.Interfaces;
 using Application.Models.Requests;
 using Application.Models;
+using System.Text.RegularExpressions;
+using Domain.Enums;
 
 namespace Application.Services
 {
@@ -18,47 +21,152 @@ namespace Application.Services
 
         public List<UsuarioDto> GetAll()
         {
-            List<Usuario> usuarios = _usuarioRepository.GetAll();
-
+            var usuarios = _usuarioRepository.GetAll();
             return UsuarioDto.CreateList(usuarios);
         }
 
         public UsuarioDto GetById(int id)
         {
-            Usuario? usuario = _usuarioRepository.GetById(id);
+            if (id <= 0)
+                throw new BadRequestException("Id de usuario inválido.");
+
+            var usuario = _usuarioRepository.GetById(id);
+            if (usuario == null)
+                throw new NotFoundException("Usuario no encontrado.");
+
             return UsuarioDto.Create(usuario);
         }
 
         public UsuarioDto Add(UsuarioRequest request)
         {
-            Usuario usuario = new(request.Nombre, request.Email, request.Password);
+            ValidarSolicitudUsuario(request);
+
+            var email = request.Email!.Trim();
+            if (_usuarioRepository.GetUserByEmail(email) != null)
+                throw new BadRequestException("Ya existe un usuario con ese email.");
+
+            var usuario = new Usuario(
+                request.Nombre!.Trim(),
+                email,
+                request.Password!.Trim()
+            );
+
             _usuarioRepository.Add(usuario);
             return UsuarioDto.Create(usuario);
         }
 
         public UsuarioDto Update(int id, UsuarioRequest request)
         {
-            Usuario? existing = _usuarioRepository.GetById(id);
-            if (existing != null)
+            if (id <= 0)
+                throw new BadRequestException("Id de usuario inválido.");
+
+            if (request == null)
+                throw new BadRequestException("Solicitud de actualización inválida.");
+
+            var existing = _usuarioRepository.GetById(id);
+            if (existing == null)
+                throw new NotFoundException("Usuario no encontrado.");
+
+            if (string.IsNullOrWhiteSpace(request.Nombre)
+                && string.IsNullOrWhiteSpace(request.Email)
+                && string.IsNullOrWhiteSpace(request.Password))
             {
-                if (!string.IsNullOrEmpty(request.Nombre))
-                    existing.Nombre = request.Nombre;
-                if (!string.IsNullOrEmpty(request.Email))
-                    existing.Email = request.Email;
-                if (!string.IsNullOrEmpty(request.Password))
-                    existing.Password = request.Password;
+                throw new BadRequestException("No se proporcionaron campos para actualizar.");
             }
+
+            if (!string.IsNullOrWhiteSpace(request.Email))
+            {
+                var email = request.Email.Trim();
+                if (!ValidarEmail(email))
+                    throw new BadRequestException("Email inválido.");
+
+                var usuarioConEmail = _usuarioRepository.GetUserByEmail(email);
+                if (usuarioConEmail != null && usuarioConEmail.Id != id)
+                    throw new BadRequestException("El email ya está en uso por otro usuario.");
+
+                existing.Email = email;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Nombre))
+                existing.Nombre = request.Nombre.Trim();
+
+            if (!string.IsNullOrWhiteSpace(request.Password))
+            {
+                var password = request.Password.Trim();
+                if (password.Length < 6)
+                    throw new BadRequestException("La contraseña debe tener al menos 6 caracteres.");
+
+                existing.Password = password;
+            }
+
+            return UsuarioDto.Create(_usuarioRepository.Update(existing));
+        }
+
+        public UsuarioDto CambiarRol(int id, Rol rol)
+        {
+            Usuario? existing = _usuarioRepository.GetById(id);
+            if (existing == null)
+                throw new NotFoundException("Usuario no encontrado.");
+
+            if (!Enum.IsDefined(rol))
+                throw new BadRequestException("Rol inválido. Los roles válidos son: User (0), Admin (1).");
+
+            if (existing.Rol == rol)
+                throw new BadRequestException($"El usuario ya tiene asignado el rol {rol}.");
+
+            existing.Rol = rol;
             return UsuarioDto.Create(_usuarioRepository.Update(existing));
         }
 
         public void Delete(int id)
         {
+            if (id <= 0)
+                throw new BadRequestException("Id de usuario inválido.");
+
+            var usuario = _usuarioRepository.GetById(id);
+            if (usuario == null)
+                throw new NotFoundException("Usuario no encontrado.");
+
             _usuarioRepository.Delete(id);
         }
 
         public Usuario GetUserByEmail(string email)
         {
-            return _usuarioRepository.GetUserByEmail(email);
+            if (string.IsNullOrWhiteSpace(email))
+                throw new BadRequestException("Email inválido.");
+
+            return _usuarioRepository.GetUserByEmail(email.Trim());
+        }
+
+        private static void ValidarSolicitudUsuario(UsuarioRequest request)
+        {
+            if (request == null)
+                throw new BadRequestException("Solicitud de usuario inválida.");
+
+            if (string.IsNullOrWhiteSpace(request.Nombre))
+                throw new BadRequestException("El nombre es obligatorio.");
+
+            if (string.IsNullOrWhiteSpace(request.Email))
+                throw new BadRequestException("El email es obligatorio.");
+
+            if (!ValidarEmail(request.Email))
+                throw new BadRequestException("El email no es válido.");
+
+            if (string.IsNullOrWhiteSpace(request.Password))
+                throw new BadRequestException("La contraseña es obligatoria.");
+
+            if (request.Password.Trim().Length < 6)
+                throw new BadRequestException("La contraseña debe tener al menos 6 caracteres.");
+        }
+
+        private static bool ValidarEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return false;
+
+            var correo = email.Trim();
+            var regex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+            return regex.IsMatch(correo);
         }
     }
 }

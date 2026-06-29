@@ -1,6 +1,6 @@
 using Application.Interfaces;
 using Application.Models.Requests;
-using Domain.Entities;
+using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 namespace Web.Controllers
@@ -12,50 +12,48 @@ namespace Web.Controllers
     {
 
         private readonly IUsuarioService _usuarioService;
-        private readonly IEmailService _emailService;
-        public UsuarioController(IUsuarioService usuarioService, IEmailService emailService)
+
+        public UsuarioController(IUsuarioService usuarioService)
         {
             _usuarioService = usuarioService;
-            _emailService = emailService;
         }
 
         [AllowAnonymous]
         [HttpPost]
         public IActionResult Add(UsuarioRequest request)
         {
-            if (request == null)
-                return BadRequest();
-
             var result = _usuarioService.Add(request);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult Get()
         {
             var usuarios = _usuarioService.GetAll();
             return Ok(usuarios);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
             var usuario = _usuarioService.GetById(id);
-            if (usuario == null)
-                return NotFound();
             return Ok(usuario);
         }
 
         [HttpPut("{id:int}")]
         public IActionResult Update(int id, UsuarioRequest request)
         {
-            if (request.Nombre == null && request.Email == null && request.Password == null)
-                return BadRequest();
-
             var updated = _usuarioService.Update(id, request);
-            if (updated == null)
-                return NotFound();
+            return Ok(updated);
+        }
 
+        [HttpPatch("{id:int}/rol")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult CambiarRol(int id, [FromBody] Rol rol)
+        {
+            var updated = _usuarioService.CambiarRol(id, rol);
             return Ok(updated);
         }
 
@@ -65,5 +63,6 @@ namespace Web.Controllers
             _usuarioService.Delete(id);
             return NoContent();
         }
+
     }
 }

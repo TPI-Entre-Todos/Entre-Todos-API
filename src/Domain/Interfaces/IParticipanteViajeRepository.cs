@@ -3,13 +3,11 @@ using Domain.Interfaces;
 
 namespace Domain.Interfaces
 {
-    public interface IParticipanteViajeRepository
+    public interface IParticipanteViajeRepository : IGenericRepository<ParticipanteViaje>
     {
-        Task<List<ParticipanteViaje>> GetByViajeIdAsync(int viajeId);
-        Task<ParticipanteViaje> GetByIdsAsync(int usuarioId, int viajeId);
-        Task<ParticipanteViaje> GetByIdAsync(int id);
-        Task<ParticipanteViaje> AddAsync(ParticipanteViaje entity);
-        Task UpdateAsync(ParticipanteViaje entity);
-        Task DeleteAsync(int id);
+        List<ParticipanteViaje> GetByViajeId(int viajeId);
+        List<ParticipanteViaje> GetByUsuarioId(int usuarioId);
+        ParticipanteViaje? GetByIds(int usuarioId, int viajeId);
+        List<ParticipanteViaje> ObtenerTodos();
     }
 }

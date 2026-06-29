@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -15,39 +16,116 @@ namespace Infrastructure.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "9.0.7")
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+
+            modelBuilder.Entity("Domain.Entities.DetalleGasto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GastoId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("MontoDebe")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<decimal>("MontoPagado")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<int>("ParticipanteId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GastoId");
+
+                    b.HasIndex("ParticipanteId");
+
+                    b.ToTable("DetallesGasto");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Gasto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Categoria")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Comprobante")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("Monto")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<int>("ParticipanteId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TipoDivision")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ViajeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParticipanteId");
+
+                    b.HasIndex("ViajeId");
+
+                    b.ToTable("Gastos");
+                });
 
             modelBuilder.Entity("Domain.Entities.Invitacion", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("EmailInvitado")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<int>("Estado")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime>("FechaExpiracion")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime?>("FechaRespuesta")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<int>("UsuarioInvitadorId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<int>("ViajeId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -58,35 +136,70 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Invitaciones");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Notificacion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("Leida")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Mensaje")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("Notificaciones");
+                });
+
             modelBuilder.Entity("Domain.Entities.Pago", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Comprobante")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("DestinatarioId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("Fecha")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Metodo")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<decimal>("Monto")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("decimal(65,30)");
 
-                    b.Property<int>("ParticipanteId")
-                        .HasColumnType("INTEGER");
+                    b.Property<int>("RemitenteId")
+                        .HasColumnType("int");
 
                     b.Property<int>("ViajeId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParticipanteId");
+                    b.HasIndex("DestinatarioId");
+
+                    b.HasIndex("RemitenteId");
 
                     b.HasIndex("ViajeId");
 
@@ -97,30 +210,28 @@ namespace Infrastructure.Data.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("EsOrganizador")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Estado")
                         .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("EstadoInvitacion")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("FechaIngreso")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<decimal>("SaldoTotal")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("decimal(65,30)");
 
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<int>("ViajeId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -135,55 +246,123 @@ namespace Infrastructure.Data.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("FechaRegistro")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Password")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<int>("Rol")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.ToTable("Usuarios");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Email = "admin@entretodos.com",
+                            FechaRegistro = new DateTime(2026, 6, 15, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Nombre = "Admin",
+                            Password = "Admin123!",
+                            Rol = 1
+                        });
                 });
 
             modelBuilder.Entity("Domain.Entities.Viaje", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Moneda")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
                     b.ToTable("Viajes");
+                });
+
+            modelBuilder.Entity("PagosDetallesGasto", b =>
+                {
+                    b.Property<int>("DetallesPagadosId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PagoId")
+                        .HasColumnType("int");
+
+                    b.HasKey("DetallesPagadosId", "PagoId");
+
+                    b.HasIndex("PagoId");
+
+                    b.ToTable("PagosDetallesGasto");
+                });
+
+            modelBuilder.Entity("Domain.Entities.DetalleGasto", b =>
+                {
+                    b.HasOne("Domain.Entities.Gasto", "Gasto")
+                        .WithMany("DetallesGasto")
+                        .HasForeignKey("GastoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.ParticipanteViaje", "Participante")
+                        .WithMany("DetallesGastoDebido")
+                        .HasForeignKey("ParticipanteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Gasto");
+
+                    b.Navigation("Participante");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Gasto", b =>
+                {
+                    b.HasOne("Domain.Entities.ParticipanteViaje", "Participante")
+                        .WithMany("GastosPagados")
+                        .HasForeignKey("ParticipanteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Viaje", "Viaje")
+                        .WithMany("Gastos")
+                        .HasForeignKey("ViajeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Participante");
+
+                    b.Navigation("Viaje");
                 });
 
             modelBuilder.Entity("Domain.Entities.Invitacion", b =>
@@ -205,12 +384,29 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Viaje");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Notificacion", b =>
+                {
+                    b.HasOne("Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("Domain.Entities.Pago", b =>
                 {
-                    b.HasOne("Domain.Entities.ParticipanteViaje", "Participante")
-                        .WithMany("Pagos")
-                        .HasForeignKey("ParticipanteId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("Domain.Entities.ParticipanteViaje", "Destinatario")
+                        .WithMany("PagosRecibidos")
+                        .HasForeignKey("DestinatarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.ParticipanteViaje", "Remitente")
+                        .WithMany("PagosRealizados")
+                        .HasForeignKey("RemitenteId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Viaje", "Viaje")
@@ -219,7 +415,9 @@ namespace Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Participante");
+                    b.Navigation("Destinatario");
+
+                    b.Navigation("Remitente");
 
                     b.Navigation("Viaje");
                 });
@@ -243,9 +441,35 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Viaje");
                 });
 
+            modelBuilder.Entity("PagosDetallesGasto", b =>
+                {
+                    b.HasOne("Domain.Entities.DetalleGasto", null)
+                        .WithMany()
+                        .HasForeignKey("DetallesPagadosId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Pago", null)
+                        .WithMany()
+                        .HasForeignKey("PagoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.Gasto", b =>
+                {
+                    b.Navigation("DetallesGasto");
+                });
+
             modelBuilder.Entity("Domain.Entities.ParticipanteViaje", b =>
                 {
-                    b.Navigation("Pagos");
+                    b.Navigation("DetallesGastoDebido");
+
+                    b.Navigation("GastosPagados");
+
+                    b.Navigation("PagosRealizados");
+
+                    b.Navigation("PagosRecibidos");
                 });
 
             modelBuilder.Entity("Domain.Entities.Usuario", b =>
@@ -255,6 +479,8 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.Viaje", b =>
                 {
+                    b.Navigation("Gastos");
+
                     b.Navigation("Pagos");
 
                     b.Navigation("Participantes");

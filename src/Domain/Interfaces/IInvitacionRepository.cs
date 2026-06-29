@@ -2,11 +2,8 @@ using Domain.Entities;
 
 namespace Domain.Interfaces
 {
-    public interface IInvitacionRepository
+    public interface IInvitacionRepository : IGenericRepository<Invitacion>
     {
-        List<Invitacion> GetAll();
-        Invitacion? GetById(int id);
-        Invitacion Add(Invitacion entity);
-        void Delete(int id);
+        Invitacion? GetByToken(string token);
     }
 }

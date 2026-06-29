@@ -2,13 +2,8 @@ using Domain.Entities;
 
 namespace Domain.Interfaces
 {
-    public interface IUsuarioRepository
+    public interface IUsuarioRepository : IGenericRepository<Usuario>
     {
-        List<Usuario> GetAll();
-        Usuario GetById(int id);
-        Usuario Add(Usuario entity);
-        Usuario Update(Usuario entity);
-        void Delete(int id);
-        public Usuario GetUserByEmail(string email);
+        Usuario GetUserByEmail(string email);
     }
 }
