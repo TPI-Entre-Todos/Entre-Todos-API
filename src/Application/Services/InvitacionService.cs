@@ -38,23 +38,32 @@ namespace Application.Services
 
         public InvitacionDto Add(InvitacionRequest request)
         {
-            // Enviar email de invitación en segundo plano (no bloquear)
-            try
-            {
-                var invitacion = new Invitacion(request.ViajeId, request.UsuarioInvitadorId, request.EmailInvitado, request.FechaExpiracion);
+            ValidarInvitacion(request);
 
-                _invitacionRepository.Add(invitacion);
-                var subject = $"Invitación al viaje #{invitacion.ViajeId}";
-                var link = $"/invitaciones/accept?token={invitacion.Token}";
-                var html = $"<p>Has sido invitado al viaje #{invitacion.ViajeId}.</p><p>Usá este token: <strong>{invitacion.Token}</strong></p><p>Link: <a href=\"{link}\">Aceptar invitación</a></p>";
-                _ = Task.Run(async () => await _emailService.EnviarEmailAsync(invitacion.EmailInvitado, subject, html));
 
-                return InvitacionDto.Create(invitacion);
-            }
-            catch
-            {
-                throw new BadRequestException("Error al enviar el email de invitación. Por favor, intentá nuevamente.");
-            }
+            var invitacion = new Invitacion(request.ViajeId, request.UsuarioInvitadorId, request.EmailInvitado, request.FechaExpiracion);
+            _invitacionRepository.Add(invitacion);
+
+            var subject = $"Invitación al viaje #{invitacion.ViajeId}";
+            var link = $"/invitaciones/accept?token={invitacion.Token}";
+            var html = $"<p>Has sido invitado al viaje #{invitacion.ViajeId}.</p><p>Usá este token: <strong>{invitacion.Token}</strong></p><p>Link: <a href=\"{link}\">Aceptar invitación</a></p>";
+            _ = Task.Run(async () => await _emailService.EnviarEmailAsync(invitacion.EmailInvitado, subject, html));
+
+            return InvitacionDto.Create(invitacion);
+        }
+
+        private static void ValidarInvitacion(InvitacionRequest request)
+        {
+            if (request.ViajeId <= 0)
+                throw new BadRequestException("ViajeId inválido.");
+            if (request.UsuarioInvitadorId <= 0)
+                throw new BadRequestException("UsuarioInvitadorId inválido.");
+            if (string.IsNullOrWhiteSpace(request.EmailInvitado))
+                throw new BadRequestException("El email del invitado es requerido.");
+            if (!request.EmailInvitado.Contains('@') || !request.EmailInvitado.Contains('.'))
+                throw new BadRequestException("El formato del email del invitado no es válido.");
+            if (request.FechaExpiracion <= DateTime.UtcNow)
+                throw new BadRequestException("La fecha de expiración debe ser en el futuro.");
         }
 
         public InvitacionDto AceptarInvitacion(string token, int usuarioId)

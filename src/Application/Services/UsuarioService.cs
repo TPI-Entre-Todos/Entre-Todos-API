@@ -36,10 +36,9 @@ namespace Application.Services
 
         public UsuarioDto Add(UsuarioRequest request)
         {
-            if (string.IsNullOrEmpty(request.Email))
-                throw new BadRequestException("El email es requerido.");
+            ValidarUsuarioParaCreacion(request);
 
-            var usuarioExistente = _usuarioRepository.GetUserByEmail(request.Email);
+            var usuarioExistente = _usuarioRepository.GetUserByEmail(request.Email!);
             if (usuarioExistente != null)
                 throw new BadRequestException("El email ya está registrado.");
 
@@ -54,10 +53,15 @@ namespace Application.Services
             if (existing == null)
                 throw new NotFoundException("Usuario no encontrado.");
 
-            if (!string.IsNullOrEmpty(request.Nombre))
+            if (string.IsNullOrWhiteSpace(request.Nombre) && string.IsNullOrWhiteSpace(request.Email) && string.IsNullOrWhiteSpace(request.Password))
+                throw new BadRequestException("Debe enviar al menos un campo para actualizar.");
+
+            if (!string.IsNullOrWhiteSpace(request.Nombre))
                 existing.Nombre = request.Nombre;
-            if (!string.IsNullOrEmpty(request.Email))
+            if (!string.IsNullOrWhiteSpace(request.Email))
             {
+                if (!request.Email.Contains('@') || !request.Email.Contains('.'))
+                    throw new BadRequestException("El formato del email no es válido.");
                 if (existing.Email != request.Email)
                 {
                     var usuarioExistente = _usuarioRepository.GetUserByEmail(request.Email);
@@ -66,8 +70,12 @@ namespace Application.Services
                 }
                 existing.Email = request.Email;
             }
-            if (!string.IsNullOrEmpty(request.Password))
+            if (!string.IsNullOrWhiteSpace(request.Password))
+            {
+                if (request.Password.Length < 6)
+                    throw new BadRequestException("La contraseña debe tener al menos 6 caracteres.");
                 existing.Password = request.Password;
+            }
 
             return UsuarioDto.Create(_usuarioRepository.Update(existing));
         }
@@ -90,7 +98,25 @@ namespace Application.Services
 
         public void Delete(int id)
         {
+            var usuario = _usuarioRepository.GetById(id);
+            if (usuario == null)
+                throw new NotFoundException("Usuario no encontrado.");
+
             _usuarioRepository.Delete(id);
+        }
+
+        private static void ValidarUsuarioParaCreacion(UsuarioRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Nombre))
+                throw new BadRequestException("El nombre es requerido.");
+            if (string.IsNullOrWhiteSpace(request.Email))
+                throw new BadRequestException("El email es requerido.");
+            if (!request.Email.Contains('@') || !request.Email.Contains('.'))
+                throw new BadRequestException("El formato del email no es válido.");
+            if (string.IsNullOrWhiteSpace(request.Password))
+                throw new BadRequestException("La contraseña es requerida.");
+            if (request.Password.Length < 6)
+                throw new BadRequestException("La contraseña debe tener al menos 6 caracteres.");
         }
 
         public Usuario GetUserByEmail(string email)

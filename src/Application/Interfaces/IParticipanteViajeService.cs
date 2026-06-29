@@ -10,7 +10,7 @@ namespace Application.Interfaces
         List<ParticipanteViajeDto> ObtenerPorViajeAdmin(int viajeId);
         List<ParticipanteViajeDto> ObtenerTodos(int usuarioId, bool esAdmin);
         ParticipanteViajeDto CambiarEsOrganizador(int id, bool esOrganizador, int usuarioId, bool esAdmin);
-        void EliminarParticipante(int id);
+        void EliminarParticipante(int id, int usuarioId, bool esAdmin);
 
     }
 }

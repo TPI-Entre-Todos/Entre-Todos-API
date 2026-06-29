@@ -40,25 +40,18 @@ namespace Web.Controllers
         {
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin";
+            var viaje = _viajeService.GetById(id, userId, esAdmin);
 
-            try
-            {
-                var viaje = _viajeService.GetById(id, userId, esAdmin);
-                if (viaje == null)
-                    return NotFound();
+            return Ok(viaje);
 
-                return Ok(viaje);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
         }
 
         [HttpDelete("{id:int}")]
         public IActionResult Delete([FromRoute] int id)
         {
-            _viajeService.Delete(id);
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin";
+            _viajeService.Delete(id, userId, esAdmin);
             return NoContent();
         }
     }

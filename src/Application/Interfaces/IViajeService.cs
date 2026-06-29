@@ -9,7 +9,7 @@ namespace Application.Interfaces
         List<ViajeDto> Get(int userId, bool esAdmin);
         ViajeDto? GetById(int id, int userId, bool esAdmin);
 
-        void Delete(int id);
+        void Delete(int id, int userId, bool esAdmin);
 
 
     }

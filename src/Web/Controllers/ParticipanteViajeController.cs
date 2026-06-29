@@ -72,8 +72,9 @@ namespace Web.Controllers
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
-
-            _participanteViajeService.EliminarParticipante(id);
+            int userIdClaim = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.IsInRole("Admin");
+            _participanteViajeService.EliminarParticipante(id, userIdClaim, esAdmin);
             return NoContent();
         }
 

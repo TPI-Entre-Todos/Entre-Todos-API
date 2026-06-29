@@ -23,13 +23,17 @@ namespace Application.Services
         // 1. ALTA: Registrar o invitar participante al viaje
         public ParticipanteViajeDto RegistrarParticipante(ParticipanteViajeCreateRequest dto)
         {
+            if (dto.UsuarioId <= 0)
+                throw new BadRequestException("UsuarioId inválido.");
+            if (dto.ViajeId <= 0)
+                throw new BadRequestException("ViajeId inválido.");
+
             var existe = _repository.GetByIds(dto.UsuarioId, dto.ViajeId);
             if (existe != null) throw new BadRequestException("El usuario ya se encuentra registrado o invitado.");
 
             var nuevo = new ParticipanteViaje(dto.UsuarioId, dto.ViajeId, dto.EsOrganizador);
             var creado = _repository.Add(nuevo);
 
-            // Mapeamos directo acá sin usar funciones externas
             return ParticipanteViajeDto.Create(creado);
         }
 
@@ -84,10 +88,17 @@ namespace Application.Services
         }
 
         // 4. BAJA: Eliminar participante
-        public void EliminarParticipante(int id)
+        public void EliminarParticipante(int id, int usuarioId, bool esAdmin)
         {
             var participante = _repository.GetById(id);
             if (participante == null) throw new NotFoundException("Participante no encontrado.");
+
+            if (!esAdmin)
+            {
+                var solicitante = _repository.GetByIds(usuarioId, participante.ViajeId);
+                if (solicitante == null || !solicitante.EsOrganizador)
+                    throw new UnauthorizedException("Solo administradores u organizadores pueden eliminar participantes.");
+            }
 
             if (participante.SaldoTotal != 0)
                 throw new BadRequestException("No se puede eliminar un participante con saldos pendientes.");
