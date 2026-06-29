@@ -6,8 +6,8 @@ namespace Application
 {
     public interface INotificacionService
     {
-        Task<NotificacionDto> CrearNotificacionAsync(NotificacionCreateDto dto);
-        Task<List<NotificacionDto>> ObtenerPorUsuarioAsync(int usuarioId);
-        Task MarcarComoLeidaAsync(int id);
+        NotificacionDto CrearNotificacion(NotificacionCreateDto dto);
+        List<NotificacionDto> ObtenerPorUsuario(int usuarioId);
+        void MarcarComoLeida(int id, int usuarioId);
     }
 }

@@ -16,30 +16,30 @@ namespace Infrastructure.Data
             _context = context;
         }
 
-        public async Task<Notificacion> GetByIdAsync(int id)
+        public Notificacion GetById(int id)
         {
-            return await _context.Notificaciones.FirstOrDefaultAsync(n => n.Id == id);
+            return _context.Notificaciones.FirstOrDefault(n => n.Id == id);
         }
 
-        public async Task<List<Notificacion>> GetByUsuarioIdAsync(int usuarioId)
+        public List<Notificacion> GetByUsuarioId(int usuarioId)
         {
-            return await _context.Notificaciones
+            return _context.Notificaciones
                 .Where(n => n.UsuarioId == usuarioId)
                 .OrderByDescending(n => n.Fecha) // Las más nuevas primero
-                .ToListAsync();
+                .ToList();
         }
 
-        public async Task<Notificacion> AddAsync(Notificacion entity)
+        public Notificacion Add(Notificacion entity)
         {
-            await _context.Notificaciones.AddAsync(entity);
-            await _context.SaveChangesAsync();
+            _context.Notificaciones.Add(entity);
+            _context.SaveChanges();
             return entity;
         }
 
-        public async Task UpdateAsync(Notificacion entity)
+        public void Update(Notificacion entity)
         {
             _context.Notificaciones.Update(entity);
-            await _context.SaveChangesAsync();
+            _context.SaveChanges();
         }
     }
 }

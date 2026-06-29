@@ -8,7 +8,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-
+using Domain.Exceptions;
 namespace Infrastructure.Services
 {
     public class AuthenticationService : IAuthenticationService
@@ -24,12 +24,13 @@ namespace Infrastructure.Services
         private Usuario? ValidateUser(AuthenticationRequest authenticationRequest)
         {
             if (string.IsNullOrEmpty(authenticationRequest.Email) || string.IsNullOrEmpty(authenticationRequest.Password))
-                return null;
+                throw new UnauthorizedException("Email y contraseña son requeridos");
 
             var user = _usuarioRepository.GetUserByEmail(authenticationRequest.Email);
-
             if (user == null) return null;
-
+            // ✅ Validar que la contraseña coincida
+            if (user.Password != authenticationRequest.Password)
+                throw new UnauthorizedException("Credenciales inválidas");
             return user;
 
         }
@@ -46,7 +47,8 @@ namespace Infrastructure.Services
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Name, user.Nombre)
+                    new Claim(ClaimTypes.Name, user.Nombre),
+                    new Claim(ClaimTypes.Role, user.Rol.ToString())
                 };
                 var jwtToken = new JwtSecurityToken(
                     issuer: _options.Issuer,

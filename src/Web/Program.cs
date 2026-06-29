@@ -8,11 +8,17 @@ using Microsoft.OpenApi;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Application;
+
+using Web.Middlewares;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 
 
+
 if (builder.Environment.IsProduction())
+//if (!builder.Environment.IsDevelopment())
 {
     var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
@@ -20,6 +26,7 @@ if (builder.Environment.IsProduction())
 
 
 builder.Services.AddControllers();
+builder.Services.AddTransient<GlobalExceptionHandlingMiddleware>();
 
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IViajeRepository, ViajeRepository>();
@@ -34,10 +41,11 @@ builder.Services.AddScoped<IParticipanteViajeService, ParticipanteViajeService>(
 builder.Services.AddScoped<IPagoRepository, PagoRepository>();
 builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IGastoRepository, GastoRepository>();
-builder.Services.AddScoped<GastoService>();
 builder.Services.AddScoped<IGastoService, GastoService>();
 builder.Services.AddScoped<INotificacionRepository, NotificacionRepository>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();
+builder.Services.AddScoped<IDetalleGastoRepository, DetalleGastoRepository>();
+builder.Services.AddScoped<IDetalleGastoService, DetalleGastoService>();
 
 
 
@@ -131,6 +139,8 @@ else
     });
     app.MapOpenApi();
 }
+
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
