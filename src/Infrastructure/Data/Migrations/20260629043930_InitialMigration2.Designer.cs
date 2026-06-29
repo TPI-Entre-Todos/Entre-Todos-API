@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    [Migration("20260624222237_MigrationDetalleGasto2")]
-    partial class MigrationDetalleGasto2
+    [Migration("20260629043930_InitialMigration2")]
+    partial class InitialMigration2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -29,7 +29,10 @@ namespace Infrastructure.Data.Migrations
                     b.Property<int>("GastoId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<decimal>("MontoIndividual")
+                    b.Property<decimal>("MontoDebe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("MontoPagado")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("ParticipanteId")
@@ -50,6 +53,12 @@ namespace Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Categoria")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Comprobante")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -61,6 +70,9 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("ParticipanteId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TipoDivision")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ViajeId")
@@ -282,6 +294,21 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Viajes");
                 });
 
+            modelBuilder.Entity("PagosDetallesGasto", b =>
+                {
+                    b.Property<int>("DetallesPagadosId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PagoId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("DetallesPagadosId", "PagoId");
+
+                    b.HasIndex("PagoId");
+
+                    b.ToTable("PagosDetallesGasto");
+                });
+
             modelBuilder.Entity("Domain.Entities.DetalleGasto", b =>
                 {
                     b.HasOne("Domain.Entities.Gasto", "Gasto")
@@ -394,6 +421,21 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Usuario");
 
                     b.Navigation("Viaje");
+                });
+
+            modelBuilder.Entity("PagosDetallesGasto", b =>
+                {
+                    b.HasOne("Domain.Entities.DetalleGasto", null)
+                        .WithMany()
+                        .HasForeignKey("DetallesPagadosId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Pago", null)
+                        .WithMany()
+                        .HasForeignKey("PagoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Entities.Gasto", b =>

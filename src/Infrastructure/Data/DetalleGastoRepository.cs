@@ -48,6 +48,13 @@ namespace Infrastructure.Data
             _context.SaveChanges();
         }
 
+        public DetalleGasto Update(DetalleGasto entity)
+        {
+            _context.DetallesGasto.Update(entity);
+            _context.SaveChanges();
+            return entity;
+        }
+
         public void Delete(int id)
         {
             var entity = GetById(id);

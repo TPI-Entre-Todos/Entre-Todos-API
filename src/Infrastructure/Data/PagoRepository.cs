@@ -19,18 +19,20 @@ public class PagoRepository : IPagoRepository
     public List<Pago> GetAll()
     {
         return _context.Pagos
-            .Include(p => p.Remitente)       // 👈 Corregido
-            .Include(p => p.Destinatario)    // 👈 Agregado para traer el circuito completo
+            .Include(p => p.Remitente)
+            .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
+            .Include(p => p.DetallesPagados)
             .ToList();
     }
 
     public Pago GetById(int id)
     {
         return _context.Pagos
-            .Include(p => p.Remitente)       // 👈 Corregido
-            .Include(p => p.Destinatario)    // 👈 Agregado
+            .Include(p => p.Remitente)
+            .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
+            .Include(p => p.DetallesPagados)
             .FirstOrDefault(p => p.Id == id);
     }
 
@@ -74,9 +76,10 @@ public class PagoRepository : IPagoRepository
     public List<Pago> GetByViajeId(int viajeId)
     {
         return _context.Pagos
-            .Include(p => p.Remitente)       // 👈 Corregido
-            .Include(p => p.Destinatario)    // 👈 Agregado
+            .Include(p => p.Remitente)
+            .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
+            .Include(p => p.DetallesPagados)
             .Where(p => p.ViajeId == viajeId)
             .ToList();
     }
@@ -84,10 +87,11 @@ public class PagoRepository : IPagoRepository
     public List<Pago> GetByParticipanteId(int participanteId)
     {
         return _context.Pagos
-            .Include(p => p.Remitente)       // 👈 Corregido
-            .Include(p => p.Destinatario)    // 👈 Agregado
+            .Include(p => p.Remitente)
+            .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
-            .Where(p => p.RemitenteId == participanteId) // 👈 Corregido para buscar por el que envió el pago
+            .Include(p => p.DetallesPagados)
+            .Where(p => p.RemitenteId == participanteId)
             .ToList();
     }
 }
