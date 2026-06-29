@@ -2,20 +2,23 @@ using Application.Interfaces;
 using Application.Services;
 using Domain.Interfaces;
 using Infrastructure.Data;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Infrastructure.Services;
 using Microsoft.OpenApi;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Application;
+
 using Web.Middlewares;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 
 
-if (!builder.Environment.IsDevelopment())
+
+if (builder.Environment.IsProduction())
+//if (!builder.Environment.IsDevelopment())
 {
     var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
@@ -44,16 +47,15 @@ builder.Services.AddScoped<INotificacionService, NotificacionService>();
 builder.Services.AddScoped<IDetalleGastoRepository, DetalleGastoRepository>();
 builder.Services.AddScoped<IDetalleGastoService, DetalleGastoService>();
 
-var connection = new SqliteConnection("DataSource = EntreTodos.db");
-connection.Open();
+
 
 // journal mode
-using (var command = connection.CreateCommand())
-{
-    command.CommandText = "PRAGMA journal_mode = DELETE;";
-    command.ExecuteNonQuery();
-}
-builder.Services.AddDbContext<ApplicationContext>(dbContextOptions => dbContextOptions.UseSqlite(connection));
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException(
+        "Connection string 'DefaultConnection' no encontrada.");
+
+builder.Services.AddDbContext<ApplicationContext>(options =>
+options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 builder.Services.AddOpenApi(options =>
 {
