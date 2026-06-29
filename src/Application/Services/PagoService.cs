@@ -58,12 +58,17 @@ namespace Application.Services
         {
             ValidarPagoBase(request);
             if (request.DetalleGastoId <= 0)
-                throw new ArgumentException("DetalleGastoId debe ser válido");
+                throw new BadRequestException("DetalleGastoId debe ser válido");
+
+            if (_viajeRepository.GetById(request.ViajeId) == null)
+                throw new NotFoundException("Viaje no encontrado");
 
             var remitente = _participanteRepository.GetById(request.ParticipanteId)
                 ?? throw new NotFoundException("Participante remitente no encontrado");
             var destinatario = _participanteRepository.GetById(request.DestinatarioId)
                 ?? throw new NotFoundException("Participante destinatario no encontrado");
+
+            ValidarParticipantesDelViaje(remitente, destinatario, request.ViajeId);
 
             var pago = new Pago(
                 request.ParticipanteId,
@@ -76,7 +81,8 @@ namespace Application.Services
 
             var detalles = ActualizarDetallesGasto(
                 [new PagoDetalleGastoItem { DetalleGastoId = request.DetalleGastoId, Monto = request.Monto!.Value }],
-                destinatario
+                destinatario,
+                request.ViajeId
             );
             pago.DetallesPagados = detalles;
 
@@ -90,12 +96,19 @@ namespace Application.Services
         {
             ValidarPagoBase(request);
             if (request.DetallesPagados == null || request.DetallesPagados.Count == 0)
-                throw new ArgumentException("Debe especificar al menos un DetalleGasto a pagar");
+                throw new BadRequestException("Debe especificar al menos un DetalleGasto a pagar");
+
+            ValidarMontoDetalles(request.DetallesPagados, request.Monto!.Value);
+
+            if (_viajeRepository.GetById(request.ViajeId) == null)
+                throw new NotFoundException("Viaje no encontrado");
 
             var remitente = _participanteRepository.GetById(request.ParticipanteId)
                 ?? throw new NotFoundException("Participante remitente no encontrado");
             var destinatario = _participanteRepository.GetById(request.DestinatarioId)
                 ?? throw new NotFoundException("Participante destinatario no encontrado");
+
+            ValidarParticipantesDelViaje(remitente, destinatario, request.ViajeId);
 
             var pago = new Pago(
                 request.ParticipanteId,
@@ -106,7 +119,7 @@ namespace Application.Services
                 request.Comprobante
             );
 
-            var detalles = ActualizarDetallesGasto(request.DetallesPagados, destinatario);
+            var detalles = ActualizarDetallesGasto(request.DetallesPagados, destinatario, request.ViajeId);
             pago.DetallesPagados = detalles;
 
             _pagoRepository.Add(pago);
@@ -115,14 +128,26 @@ namespace Application.Services
             return PagoDto.Create(pago);
         }
 
-        private List<DetalleGasto> ActualizarDetallesGasto(List<PagoDetalleGastoItem> detallesPagados, ParticipanteViaje destinatario)
+        private List<DetalleGasto> ActualizarDetallesGasto(List<PagoDetalleGastoItem> detallesPagados, ParticipanteViaje destinatario, int viajeId)
         {
             var detallesEntidades = new List<DetalleGasto>();
 
             foreach (var detalle in detallesPagados)
             {
+                if (detalle.Monto <= 0)
+                    throw new BadRequestException($"El monto del ítem DetalleGasto {detalle.DetalleGastoId} debe ser mayor a 0");
+
                 var detalleGasto = _detalleGastoRepository.GetById(detalle.DetalleGastoId)
                     ?? throw new NotFoundException($"DetalleGasto {detalle.DetalleGastoId} no encontrado");
+
+                var gastoDelDetalle = _gastoRepository.GetById(detalleGasto.GastoId)
+                    ?? throw new NotFoundException($"Gasto asociado al DetalleGasto {detalle.DetalleGastoId} no encontrado");
+
+                if (gastoDelDetalle.ViajeId != viajeId)
+                    throw new BadRequestException($"El DetalleGasto {detalle.DetalleGastoId} no pertenece al viaje indicado");
+
+                if (detalleGasto.ParticipanteId != destinatario.Id)
+                    throw new BadRequestException($"El DetalleGasto {detalle.DetalleGastoId} no corresponde al destinatario del pago");
 
                 if (detalle.Monto > detalleGasto.SaldoPendiente)
                     throw new BadRequestException(
@@ -148,10 +173,20 @@ namespace Application.Services
         {
             ValidarPagoBase(request);
             if (request.DetalleGastoId <= 0)
-                throw new ArgumentException("DetalleGastoId debe ser válido");
+                throw new BadRequestException("DetalleGastoId debe ser válido");
+
+            if (_viajeRepository.GetById(request.ViajeId) == null)
+                throw new NotFoundException("Viaje no encontrado");
 
             var existing = _pagoRepository.GetById(id)
                 ?? throw new NotFoundException("Pago no encontrado");
+
+            var remitente = _participanteRepository.GetById(request.ParticipanteId)
+                ?? throw new NotFoundException("Participante remitente no encontrado");
+            var destinatarioNuevo = _participanteRepository.GetById(request.DestinatarioId)
+                ?? throw new NotFoundException("Participante destinatario no encontrado");
+
+            ValidarParticipantesDelViaje(remitente, destinatarioNuevo, request.ViajeId);
 
             var destinatarioAnterior = _participanteRepository.GetById(existing.DestinatarioId)
                 ?? throw new NotFoundException("Participante destinatario anterior no encontrado");
@@ -160,17 +195,12 @@ namespace Application.Services
 
             ActualizarCamposPago(existing, request);
 
-            var destinatarioNuevo = _participanteRepository.GetById(request.DestinatarioId)
-                ?? throw new NotFoundException("Participante destinatario no encontrado");
-
             var detalles = ActualizarDetallesGasto(
                 [new PagoDetalleGastoItem { DetalleGastoId = request.DetalleGastoId, Monto = request.Monto!.Value }],
-                destinatarioNuevo
+                destinatarioNuevo,
+                request.ViajeId
             );
             existing.DetallesPagados = detalles;
-
-            var remitente = _participanteRepository.GetById(request.ParticipanteId)
-                ?? throw new NotFoundException("Participante remitente no encontrado");
 
             EnviarNotificacion(remitente, destinatarioNuevo, existing);
             return PagoDto.Create(_pagoRepository.Update(existing));
@@ -180,10 +210,22 @@ namespace Application.Services
         {
             ValidarPagoBase(request);
             if (request.DetallesPagados == null || request.DetallesPagados.Count == 0)
-                throw new ArgumentException("Debe especificar al menos un DetalleGasto a pagar");
+                throw new BadRequestException("Debe especificar al menos un DetalleGasto a pagar");
+
+            ValidarMontoDetalles(request.DetallesPagados, request.Monto!.Value);
+
+            if (_viajeRepository.GetById(request.ViajeId) == null)
+                throw new NotFoundException("Viaje no encontrado");
 
             var existing = _pagoRepository.GetById(id)
                 ?? throw new NotFoundException("Pago no encontrado");
+
+            var remitente = _participanteRepository.GetById(request.ParticipanteId)
+                ?? throw new NotFoundException("Participante remitente no encontrado");
+            var destinatarioNuevo = _participanteRepository.GetById(request.DestinatarioId)
+                ?? throw new NotFoundException("Participante destinatario no encontrado");
+
+            ValidarParticipantesDelViaje(remitente, destinatarioNuevo, request.ViajeId);
 
             var destinatarioAnterior = _participanteRepository.GetById(existing.DestinatarioId)
                 ?? throw new NotFoundException("Participante destinatario anterior no encontrado");
@@ -192,14 +234,8 @@ namespace Application.Services
 
             ActualizarCamposPago(existing, request);
 
-            var destinatarioNuevo = _participanteRepository.GetById(request.DestinatarioId)
-                ?? throw new NotFoundException("Participante destinatario no encontrado");
-
-            var detalles = ActualizarDetallesGasto(request.DetallesPagados, destinatarioNuevo);
+            var detalles = ActualizarDetallesGasto(request.DetallesPagados, destinatarioNuevo, request.ViajeId);
             existing.DetallesPagados = detalles;
-
-            var remitente = _participanteRepository.GetById(request.ParticipanteId)
-                ?? throw new NotFoundException("Participante remitente no encontrado");
 
             EnviarNotificacion(remitente, destinatarioNuevo, existing);
             return PagoDto.Create(_pagoRepository.Update(existing));
@@ -306,18 +342,40 @@ namespace Application.Services
 
         private void ValidarPagoBase(PagoBaseRequest request)
         {
-            if (request.ParticipanteId <= 0) throw new ArgumentException("El Remitente debe ser válido");
-            if (request.DestinatarioId <= 0) throw new ArgumentException("El Destinatario debe ser válido");
-            if (request.ParticipanteId == request.DestinatarioId) throw new ArgumentException("Un participante no puede transferirse plata a sí mismo.");
-            if (request.ViajeId <= 0) throw new ArgumentException("ViajeId debe ser válido");
-            if (!request.Monto.HasValue || request.Monto.Value <= 0) throw new ArgumentException("El monto es requerido y debe ser mayor a 0");
-            if (string.IsNullOrEmpty(request.Metodo)) throw new ArgumentException("El método de pago es requerido");
+            if (request.ParticipanteId <= 0) throw new BadRequestException("El Remitente debe ser válido");
+            if (request.DestinatarioId <= 0) throw new BadRequestException("El Destinatario debe ser válido");
+            if (request.ParticipanteId == request.DestinatarioId) throw new BadRequestException("Un participante no puede transferirse plata a sí mismo.");
+            if (request.ViajeId <= 0) throw new BadRequestException("ViajeId debe ser válido");
+            if (!request.Monto.HasValue || request.Monto.Value <= 0) throw new BadRequestException("El monto es requerido y debe ser mayor a 0");
+            if (string.IsNullOrEmpty(request.Metodo)) throw new BadRequestException("El método de pago es requerido");
+        }
+
+        private void ValidarParticipantesDelViaje(ParticipanteViaje remitente, ParticipanteViaje destinatario, int viajeId)
+        {
+            if (remitente.ViajeId != viajeId)
+                throw new BadRequestException("El remitente no pertenece al viaje indicado");
+            if (destinatario.ViajeId != viajeId)
+                throw new BadRequestException("El destinatario no pertenece al viaje indicado");
+            if (remitente.Estado != "Activo")
+                throw new BadRequestException("El remitente no es un participante activo del viaje");
+            if (destinatario.Estado != "Activo")
+                throw new BadRequestException("El destinatario no es un participante activo del viaje");
+        }
+
+        private static void ValidarMontoDetalles(List<PagoDetalleGastoItem> detalles, decimal montoTotal)
+        {
+            var sumaDetalles = detalles.Sum(d => d.Monto);
+            if (sumaDetalles != montoTotal)
+                throw new BadRequestException(
+                    $"La suma de los montos de los detalles ({sumaDetalles}) no coincide con el monto total del pago ({montoTotal})");
         }
 
         private void EnviarNotificacion(ParticipanteViaje remitente, ParticipanteViaje destinatario, Pago pago)
         {
-            var usuario = _usuarioRepository.GetById(remitente.UsuarioId);
-            var viaje = _viajeRepository.GetById(pago.ViajeId);
+            var usuario = _usuarioRepository.GetById(remitente.UsuarioId)
+                ?? throw new NotFoundException($"Usuario del remitente no encontrado");
+            var viaje = _viajeRepository.GetById(pago.ViajeId)
+                ?? throw new NotFoundException("Viaje no encontrado al enviar notificación");
             var mensaje = $"Usuario {usuario.Nombre} cargó un pago de ${pago.Monto} en el viaje {viaje.Nombre}";
             _notificacionRepository.Add(new Notificacion(destinatario.UsuarioId, mensaje));
         }
