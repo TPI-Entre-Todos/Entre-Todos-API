@@ -2,13 +2,8 @@ using Domain.Entities;
 
 namespace Domain.Interfaces
 {
-    public interface IViajeRepository
+    public interface IViajeRepository : IGenericRepository<Viaje>
     {
-        List<Viaje> GetAll();
-        public Viaje GetById(int id);
 
-        public Viaje Add(Viaje entity);
-
-        public void Delete(int id);
     }
 }

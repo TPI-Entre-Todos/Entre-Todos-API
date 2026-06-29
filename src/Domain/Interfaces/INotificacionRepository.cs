@@ -4,11 +4,8 @@ using Domain.Entities;
 
 namespace Domain.Interfaces
 {
-    public interface INotificacionRepository
+    public interface INotificacionRepository : IGenericRepository<Notificacion>
     {
-        Notificacion GetById(int id);
         List<Notificacion> GetByUsuarioId(int usuarioId);
-        Notificacion Add(Notificacion entity);
-        void Update(Notificacion entity);
     }
 }
