@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Domain.Enums;
 
 namespace Infrastructure.Data
 {
@@ -23,6 +24,7 @@ namespace Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Usuario>().HasData(CreateUsuarioSeed());
             // 1. Configuración de Relación: Un Gasto pertenece a un ParticipanteViaje (El que pagó)
             modelBuilder.Entity<Gasto>()
                 .HasOne(g => g.Participante)
@@ -43,8 +45,8 @@ namespace Infrastructure.Data
                 .WithMany(g => g.DetallesGasto)
                 .HasForeignKey(dg => dg.GastoId)
                 .OnDelete(DeleteBehavior.Cascade); // Si borrás el Gasto, se borran automáticamente sus divisiones
-                
-                // Un Pago tiene un Remitente (El participante que transfiere el dinero)
+
+            // Un Pago tiene un Remitente (El participante que transfiere el dinero)
             modelBuilder.Entity<Pago>()
                 .HasOne(p => p.Remitente)
                 .WithMany(pv => pv.PagosRealizados)
@@ -64,6 +66,15 @@ namespace Infrastructure.Data
                 .WithMany(v => v.Pagos)
                 .HasForeignKey(p => p.ViajeId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+        }
+        private Usuario[] CreateUsuarioSeed()
+        {
+            return new[]
+            {
+                    new Usuario { Id = 1, Nombre="Admin", Email="admin@entretodos.com",Password="Admin123!", FechaRegistro= new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc), Rol= Rol.Admin }
+            };
         }
     }
+
 }

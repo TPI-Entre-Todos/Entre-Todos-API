@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Interfaces;
 using Application.Interfaces;
 using Application.Models.Requests;
@@ -34,6 +35,9 @@ namespace Application.Services
         public PagoDto GetById(int id)
         {
             Pago pago = _pagoRepository.GetById(id);
+            if (pago == null)
+                throw new NotFoundException("Pago no encontrado");
+
             return PagoDto.Create(pago);
         }
 
@@ -51,9 +55,13 @@ namespace Application.Services
                 request.Metodo, 
                 request.Comprobante
             );
-
+            Usuario usuario = _usuarioRepository.GetById(pago.DestinatarioId);
+            Viaje viaje = _viajeRepository.GetById(pago.ViajeId);
+            var mensaje = $"Usuario {usuario.Nombre} cargó un pago en el viaje {viaje.Nombre}";
+            var nuevaNotificacion = new Notificacion(pago.DestinatarioId, mensaje);
+            _notificacionRepository.Add(nuevaNotificacion);
             _pagoRepository.Add(pago);
-            return PagoDto.Create(pago);
+            return PagoDto.Create(pago);    
         }
 
         public PagoDto Update(int id, PagoRequest request)
@@ -72,6 +80,12 @@ namespace Application.Services
             }
             if (!string.IsNullOrEmpty(request.Metodo)) existing.Metodo = request.Metodo;
             if (!string.IsNullOrEmpty(request.Comprobante)) existing.Comprobante = request.Comprobante;
+
+            Usuario usuario = _usuarioRepository.GetById(request.DestinatarioId);
+            Viaje viaje = _viajeRepository.GetById(request.ViajeId);
+            var mensaje = $"Usuario {usuario.Nombre} actualizó un pago en el viaje {viaje.Nombre}";
+            var nuevaNotificacion = new Notificacion(request.DestinatarioId, mensaje);
+            _notificacionRepository.Add(nuevaNotificacion);
 
             return PagoDto.Create(_pagoRepository.Update(existing));
         }

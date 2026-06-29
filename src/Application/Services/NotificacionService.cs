@@ -4,61 +4,45 @@ using System.Linq;
 using System.Threading.Tasks;
 using Application.Models;
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Interfaces;
 
 namespace Application
 {
     public class NotificacionService : INotificacionService
     {
-        private readonly INotificacionRepository _repository;
+        private readonly INotificacionRepository _notificacionRepository;
 
-        public NotificacionService(INotificacionRepository repository)
+        public NotificacionService(INotificacionRepository notificacionRepository)
         {
-            _repository = repository;
+            _notificacionRepository = notificacionRepository;
         }
 
-        public async Task<NotificacionDto> CrearNotificacionAsync(NotificacionCreateDto dto)
+        public NotificacionDto CrearNotificacion(NotificacionCreateDto dto)
         {
-            var nueva = new Notificacion
-            {
-                UsuarioId = dto.UsuarioId,
-                Mensaje = dto.Mensaje,
-                Fecha = DateTime.Now,
-                Leida = false // Arranca sin leer
-            };
+            var nueva = new Notificacion(dto.UsuarioId, dto.Mensaje);
 
-            var creada = await _repository.AddAsync(nueva);
+            var creada = _notificacionRepository.Add(nueva);
 
-            return new NotificacionDto
-            {
-                Id = creada.Id,
-                UsuarioId = creada.UsuarioId,
-                Mensaje = creada.Mensaje,
-                Fecha = creada.Fecha,
-                Leida = creada.Leida
-            };
+            return NotificacionDto.Create(creada);
         }
 
-        public async Task<List<NotificacionDto>> ObtenerPorUsuarioAsync(int usuarioId)
+        public List<NotificacionDto> ObtenerPorUsuario(int usuarioId)
         {
-            var lista = await _repository.GetByUsuarioIdAsync(usuarioId);
-            return lista.Select(n => new NotificacionDto
-            {
-                Id = n.Id,
-                UsuarioId = n.UsuarioId,
-                Mensaje = n.Mensaje,
-                Fecha = n.Fecha,
-                Leida = n.Leida
-            }).ToList();
+            var lista = _notificacionRepository.GetByUsuarioId(usuarioId);
+            return NotificacionDto.CreateList(lista);
         }
 
-        public async Task MarcarComoLeidaAsync(int id)
+        public void MarcarComoLeida(int id, int usuarioId)
         {
-            var notificacion = await _repository.GetByIdAsync(id);
-            if (notificacion == null) throw new Exception("Notificación no encontrada.");
+            var notificacion = _notificacionRepository.GetById(id);
+            if (notificacion == null) throw new NotFoundException("Notificación no encontrada.");
+
+            if (notificacion.UsuarioId != usuarioId)
+                throw new Domain.Exceptions.UnauthorizedAccessException("No tienes permiso para marcar como leída esta notificación.");
 
             notificacion.Leida = true;
-            await _repository.UpdateAsync(notificacion);
+            _notificacionRepository.Update(notificacion);
         }
     }
 }

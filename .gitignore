@@ -490,3 +490,4 @@ src/Infrastructure/Infrastructure.csproj.lscache
 
 publish/
 deploy.zip
+.vscode/settings.json

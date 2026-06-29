@@ -1,50 +1,36 @@
-using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using Application.Interfaces;
-using Application.Models;
-using System;
-using System.Threading.Tasks;
+using Domain.Exceptions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class DetalleGastoController : ControllerBase
     {
-        private readonly IDetalleGastoService _service;
+        private readonly IDetalleGastoService _serviceDetalleGasto;
 
-                public DetalleGastoController(IDetalleGastoService service)
+        public DetalleGastoController(IDetalleGastoService serviceDetalleGasto)
         {
-            _service = service;
+            _serviceDetalleGasto = serviceDetalleGasto;
         }
 
-        
-        [HttpPost]
-        public async Task<IActionResult> Post([FromBody] DetalleGastoCreateDto dto)
+        // Cualquier participante del viaje puede ver los detalles de un gasto
+        [HttpGet("gasto/{gastoId:int}")]
+        public IActionResult GetPorGasto(int gastoId)
         {
-            try
-            {
-                await _service.RegistrarGastoConDetallesAsync(dto);
-                return Ok(new { mensaje = "Gasto y detalle registrados correctamente." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
 
-       
-        [HttpGet("gasto/{gastoId}")]
-        public async Task<IActionResult> GetPorGasto(int gastoId)
-        {
-            try
-            {
-                var detalles = await _service.ObtenerDetallesPorGastoAsync(gastoId);
-                return Ok(detalles);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin";
+
+            var detalles = _serviceDetalleGasto.ObtenerDetallesPorGasto(gastoId, userId, esAdmin);
+            return Ok(detalles);
+
+
         }
     }
 }

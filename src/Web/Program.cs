@@ -9,11 +9,12 @@ using Microsoft.OpenApi;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Application;
+using Web.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
- 
+
 if (!builder.Environment.IsDevelopment())
 {
     var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
@@ -22,6 +23,7 @@ if (!builder.Environment.IsDevelopment())
 
 
 builder.Services.AddControllers();
+builder.Services.AddTransient<GlobalExceptionHandlingMiddleware>();
 
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IViajeRepository, ViajeRepository>();
@@ -36,7 +38,6 @@ builder.Services.AddScoped<IParticipanteViajeService, ParticipanteViajeService>(
 builder.Services.AddScoped<IPagoRepository, PagoRepository>();
 builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IGastoRepository, GastoRepository>();
-builder.Services.AddScoped<GastoService>();
 builder.Services.AddScoped<IGastoService, GastoService>();
 builder.Services.AddScoped<INotificacionRepository, NotificacionRepository>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();
@@ -64,7 +65,7 @@ builder.Services.AddOpenApi(options =>
         var securityScheme = new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.Http,
-            Scheme = "bearer", 
+            Scheme = "bearer",
             BearerFormat = "JWT",
             Description = "Acá pegar el token generado al loguearse."
         };
@@ -77,7 +78,7 @@ builder.Services.AddOpenApi(options =>
 
         var requirement = new OpenApiSecurityRequirement
         {
-            [schemeReference] = [] 
+            [schemeReference] = []
         };
 
         document.Security = new List<OpenApiSecurityRequirement> { requirement };
@@ -128,7 +129,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
- 
+
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "My API V1");
@@ -136,6 +137,8 @@ else
     });
     app.MapOpenApi();
 }
+
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
