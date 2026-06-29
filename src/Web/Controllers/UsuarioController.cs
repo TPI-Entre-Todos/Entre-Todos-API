@@ -1,6 +1,6 @@
 using Application.Interfaces;
 using Application.Models.Requests;
-using Domain.Entities;
+using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 namespace Web.Controllers
@@ -57,6 +57,14 @@ namespace Web.Controllers
             if (updated == null)
                 return NotFound();
 
+            return Ok(updated);
+        }
+
+        [HttpPatch("{id:int}/rol")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult CambiarRol(int id, [FromBody] Rol rol)
+        {
+            var updated = _usuarioService.CambiarRol(id, rol);
             return Ok(updated);
         }
 

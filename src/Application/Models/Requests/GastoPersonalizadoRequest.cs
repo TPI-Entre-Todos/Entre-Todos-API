@@ -5,7 +5,7 @@ namespace Application.Models.Requests
     /// </summary>
     public class GastoPersonalizadoRequest
     {
-        public int ViajeId { get; set; }
+        public int ParticipanteId { get; set; }
         public string Descripcion { get; set; } = string.Empty;
         public decimal Monto { get; set; }
         public DateTime? Fecha { get; set; }

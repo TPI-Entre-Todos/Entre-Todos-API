@@ -1,5 +1,3 @@
-using Application.Models.Requests;
-using Domain.Entities;
 using Application.Models;
 
 namespace Application.Interfaces
@@ -11,6 +9,7 @@ namespace Application.Interfaces
 
         List<ParticipanteViajeDto> ObtenerPorViajeAdmin(int viajeId);
         List<ParticipanteViajeDto> ObtenerTodos(int usuarioId, bool esAdmin);
+        ParticipanteViajeDto CambiarEsOrganizador(int id, bool esOrganizador, int usuarioId, bool esAdmin);
         void EliminarParticipante(int id);
 
     }

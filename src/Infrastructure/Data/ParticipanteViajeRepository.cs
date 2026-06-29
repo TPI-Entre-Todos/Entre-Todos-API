@@ -67,10 +67,11 @@ namespace Infrastructure.Data
 
         // Actualiza los datos del participante (Modificación, ej: aceptar invitación o cambiar saldo)
 
-        public void Update(ParticipanteViaje entity)
+        public ParticipanteViaje Update(ParticipanteViaje entity)
         {
             _context.ParticipantesViaje.Update(entity);
             _context.SaveChanges();
+            return entity;
         }
 
         public void Delete(int id)

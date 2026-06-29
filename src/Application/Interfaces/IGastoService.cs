@@ -5,30 +5,20 @@ namespace Application.Interfaces
 {
     public interface IGastoService
     {
-        // ─── Creación como User (participanteId resuelto desde userId del token) ──
-        GastoDto CrearIgualitarioComoUser(GastoIgualitarioRequest dto, int userId);
-        GastoDto CrearPorPorcentajeComoUser(GastoPorPorcentajeRequest dto, int userId);
-        GastoDto CrearPersonalizadoComoUser(GastoPersonalizadoRequest dto, int userId);
-
-        // ─── Creación como Admin (participanteId especificado en el request) ──────
-        GastoDto CrearIgualitarioComoAdmin(GastoIgualitarioAdminRequest dto);
-        GastoDto CrearPorPorcentajeComoAdmin(GastoPorPorcentajeAdminRequest dto);
-        GastoDto CrearPersonalizadoComoAdmin(GastoPersonalizadoAdminRequest dto);
+        // ─── Creación ─────────────────────────────────────────────────────────────
+        GastoDto CrearIgualitario(GastoIgualitarioRequest dto, int userId, bool esAdmin);
+        GastoDto CrearPorPorcentaje(GastoPorPorcentajeRequest dto, int userId, bool esAdmin);
+        GastoDto CrearPersonalizado(GastoPersonalizadoRequest dto, int userId, bool esAdmin);
 
         // ─── Consulta ─────────────────────────────────────────────────────────────
         List<GastoDto> ObtenerTodos(int userId, bool esAdmin);
         List<GastoDto> ObtenerGastosPorViaje(int viajeId, int userId, bool esAdmin);
         GastoDto? ObtenerGastoPorId(int id, int userId, bool esAdmin);
 
-        // ─── Actualización como User (participanteId resuelto desde userId del token) ──
-        GastoDto ActualizarIgualitarioComoUser(int id, ActualizarGastoIgualitarioRequest dto, int userId);
-        GastoDto ActualizarPorPorcentajeComoUser(int id, ActualizarGastoPorPorcentajeRequest dto, int userId);
-        GastoDto ActualizarPersonalizadoComoUser(int id, ActualizarGastoPersonalizadoRequest dto, int userId);
-
-        // ─── Actualización como Admin (participanteId especificado en el request) ──
-        GastoDto ActualizarIgualitarioComoAdmin(int id, ActualizarGastoIgualitarioAdminRequest dto);
-        GastoDto ActualizarPorPorcentajeComoAdmin(int id, ActualizarGastoPorPorcentajeAdminRequest dto);
-        GastoDto ActualizarPersonalizadoComoAdmin(int id, ActualizarGastoPersonalizadoAdminRequest dto);
+        // ─── Actualización ────────────────────────────────────────────────────────
+        GastoDto ActualizarIgualitario(int id, GastoIgualitarioRequest dto, int userId, bool esAdmin);
+        GastoDto ActualizarPorPorcentaje(int id, GastoPorPorcentajeRequest dto, int userId, bool esAdmin);
+        GastoDto ActualizarPersonalizado(int id, GastoPersonalizadoRequest dto, int userId, bool esAdmin);
 
         // ─── Baja ─────────────────────────────────────────────────────────────────
         void EliminarGasto(int id, int userId, bool esAdmin);
