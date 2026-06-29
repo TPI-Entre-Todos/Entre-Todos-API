@@ -1,28 +1,23 @@
-using System.Collections.Generic;
-using System.Linq;
 using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data
 {
-    public class GastoRepository : IGastoRepository
+    public class GastoRepository : GenericRepository<Gasto>, IGastoRepository
     {
-        private readonly ApplicationContext _context;
-
-        public GastoRepository(ApplicationContext context)
+        public GastoRepository(ApplicationContext context) : base(context)
         {
-            _context = context;
         }
 
-        public Gasto GetById(int id)
+        public override Gasto GetById(int id)
         {
             return _context.Gastos
                 .Include(g => g.DetallesGasto)
                 .FirstOrDefault(g => g.Id == id);
         }
 
-        public List<Gasto> GetAll()
+        public override List<Gasto> GetAll()
         {
             return _context.Gastos
                 .Include(g => g.DetallesGasto)
@@ -35,13 +30,6 @@ namespace Infrastructure.Data
                 .Include(g => g.DetallesGasto)
                 .Where(g => g.ViajeId == viajeId)
                 .ToList();
-        }
-
-        public Gasto Add(Gasto entity)
-        {
-            _context.Gastos.Add(entity);
-            _context.SaveChanges();
-            return entity;
         }
 
         public Gasto AddWithDetalles(Gasto gasto, Dictionary<int, decimal> saldoChanges)
@@ -58,16 +46,6 @@ namespace Infrastructure.Data
             AplicarCambiosSaldo(saldoChanges);
             _context.SaveChanges();
             return gasto;
-        }
-
-        public void Delete(int id)
-        {
-            var entity = GetById(id);
-            if (entity != null)
-            {
-                _context.Gastos.Remove(entity);
-                _context.SaveChanges();
-            }
         }
 
         public void DeleteWithSaldoReversal(int id)

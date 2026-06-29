@@ -39,20 +39,9 @@ namespace Web.Controllers
         public IActionResult GetById([FromRoute] int id)
         {
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin";
-
-            try
-            {
-                var viaje = _viajeService.GetById(id, userId, esAdmin);
-                if (viaje == null)
-                    return NotFound();
-
-                return Ok(viaje);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
+            bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin"; 
+            var viaje = _viajeService.GetById(id, userId, esAdmin);
+            return Ok(viaje);
         }
 
         [HttpDelete("{id:int}")]

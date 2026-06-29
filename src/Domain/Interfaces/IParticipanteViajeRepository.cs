@@ -3,15 +3,11 @@ using Domain.Interfaces;
 
 namespace Domain.Interfaces
 {
-    public interface IParticipanteViajeRepository
+    public interface IParticipanteViajeRepository : IGenericRepository<ParticipanteViaje>
     {
         List<ParticipanteViaje> GetByViajeId(int viajeId);
         List<ParticipanteViaje> GetByUsuarioId(int usuarioId);
         ParticipanteViaje? GetByIds(int usuarioId, int viajeId);
-        ParticipanteViaje? GetById(int id);
-        ParticipanteViaje Add(ParticipanteViaje entity);
-        ParticipanteViaje Update(ParticipanteViaje entity);
         List<ParticipanteViaje> ObtenerTodos();
-        void Delete(int id);
     }
 }

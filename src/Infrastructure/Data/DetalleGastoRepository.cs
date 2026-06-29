@@ -1,24 +1,12 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Domain.Entities;
 using Domain.Interfaces;
-using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data
 {
-    public class DetalleGastoRepository : IDetalleGastoRepository
+    public class DetalleGastoRepository : GenericRepository<DetalleGasto>, IDetalleGastoRepository
     {
-        private readonly ApplicationContext _context;
-
-        public DetalleGastoRepository(ApplicationContext context)
+        public DetalleGastoRepository(ApplicationContext context) : base(context)
         {
-            _context = context;
-        }
-
-        public DetalleGasto GetById(int id)
-        {
-            return _context.DetallesGasto.FirstOrDefault(d => d.Id == id);
         }
 
         public List<DetalleGasto> GetByGastoId(int gastoId)
@@ -33,13 +21,6 @@ namespace Infrastructure.Data
             return _context.DetallesGasto
                 .Where(d => d.ParticipanteId == participanteId)
                 .ToList();
-        }
-
-        public DetalleGasto Add(DetalleGasto entity)
-        {
-            _context.DetallesGasto.Add(entity);
-            _context.SaveChanges();
-            return entity;
         }
 
         public void AddRange(List<DetalleGasto> entities)
