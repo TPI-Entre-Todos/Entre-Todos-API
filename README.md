@@ -69,7 +69,7 @@ src/
 
 ## Patrones y decisiones de diseño
 
-- Repository Pattern: encapsula el acceso a datos y evita acoplar la lógica de negocio al contexto de EF Core.
+- Repository Pattern: encapsula el acceso a datos y evita acoplar la lógica de negocio al contexto de EF Core. Además, se implementa mediante un repositorio genérico que centraliza las operaciones comunes de lectura, escritura y consulta, facilitando la reutilización y manteniendo una estructura más consistente en la capa de infraestructura.
 - Dependency Injection: los servicios y repositorios se resuelven desde el contenedor de ASP.NET Core.
 - Middleware global de excepciones: centraliza el manejo de errores y devuelve respuestas HTTP consistentes.
 - DTOs y modelos de request/response: separan la capa de presentación del dominio interno.
