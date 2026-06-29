@@ -10,7 +10,7 @@ namespace Domain.Interfaces
         ParticipanteViaje? GetByIds(int usuarioId, int viajeId);
         ParticipanteViaje? GetById(int id);
         ParticipanteViaje Add(ParticipanteViaje entity);
-        void Update(ParticipanteViaje entity);
+        ParticipanteViaje Update(ParticipanteViaje entity);
         List<ParticipanteViaje> ObtenerTodos();
         void Delete(int id);
     }

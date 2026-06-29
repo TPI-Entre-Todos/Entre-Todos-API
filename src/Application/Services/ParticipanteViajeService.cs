@@ -45,8 +45,7 @@ namespace Application.Services
                 throw new UnauthorizedException("Usuario no autenticado.");
 
             var miembro = _repository.GetByIds(usuarioId, viajeId);
-            if (miembro == null)
-                throw new UnauthorizedException("No estás registrado en este viaje.");
+            if (miembro == null) throw new Domain.Exceptions.UnauthorizedAccessException("No estás registrado en este viaje.");
 
             var lista = _repository.GetByViajeId(viajeId);
             return ParticipanteViajeDto.CreateList(lista);
@@ -74,6 +73,27 @@ namespace Application.Services
                 lista = _repository.GetByUsuarioId(usuarioId);
 
             return ParticipanteViajeDto.CreateList(lista);
+        }
+
+        // CAMBIAR ESTADO DE ORGANIZADOR
+        public ParticipanteViajeDto CambiarEsOrganizador(int id, bool esOrganizador, int usuarioId, bool esAdmin)
+        {
+            var participante = _repository.GetById(id);
+            if (participante == null) throw new NotFoundException("Participante no encontrado.");
+
+            if (!esAdmin)
+            {
+                var organizadorDelViaje = _repository.GetByIds(usuarioId, participante.ViajeId);
+                if (organizadorDelViaje == null || !organizadorDelViaje.EsOrganizador)
+                    throw new UnauthorizedException("Solo administradores y organizadores del viaje pueden cambiar este estado.");
+            }
+
+            if (participante.EsOrganizador == esOrganizador)
+                throw new BadRequestException($"El participante ya tiene asignado el estado de organizador: {esOrganizador}.");
+
+            participante.EsOrganizador = esOrganizador;
+            var actualizado = _repository.Update(participante);
+            return ParticipanteViajeDto.Create(actualizado);
         }
 
         // 4. BAJA: Eliminar participante
