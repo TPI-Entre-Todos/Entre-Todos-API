@@ -13,10 +13,14 @@ namespace Application.Services
     public class UsuarioService : IUsuarioService
     {
         private readonly IUsuarioRepository _usuarioRepository;
+        private readonly IParticipanteViajeRepository _participanteViajeRepository;
 
-        public UsuarioService(IUsuarioRepository usuarioRepository)
+        public UsuarioService(
+            IUsuarioRepository usuarioRepository,
+            IParticipanteViajeRepository participanteViajeRepository)
         {
             _usuarioRepository = usuarioRepository;
+            _participanteViajeRepository = participanteViajeRepository;
         }
 
         public List<UsuarioDto> GetAll()
@@ -83,14 +87,32 @@ namespace Application.Services
             return UsuarioDto.Create(_usuarioRepository.Update(existing));
         }
 
-        public void Delete(int id)
+        /// <summary>
+        /// Un usuario sólo puede eliminarse a sí mismo, salvo que sea Admin.
+        /// </summary>
+        public void Delete(int id, int usuarioAutenticadoId, bool esAdmin)
         {
             if (id <= 0)
                 throw new BadRequestException("Id de usuario inválido.");
 
+            if (!esAdmin && id != usuarioAutenticadoId)
+                throw new Domain.Exceptions.UnauthorizedAccessException("Sólo podés eliminar tu propia cuenta.");
+
             var usuario = _usuarioRepository.GetById(id);
             if (usuario == null)
                 throw new NotFoundException("Usuario no encontrado.");
+
+            // Borrar el usuario arrastra sus ParticipanteViaje por cascada, salteando la
+            // validación de saldos de EliminarParticipante. Peor: gastos y pagos apuntan al
+            // participante con FK Restrict, así que la cascada fallaría con un error de base
+            // en vez de un mensaje entendible. Como todo el historial financiero cuelga de
+            // ParticipanteViaje, exigir que no participe en ningún viaje es la única condición
+            // que garantiza un borrado limpio.
+            var participaciones = _participanteViajeRepository.GetByUsuarioId(id);
+            if (participaciones.Count > 0)
+                throw new BadRequestException(
+                    $"No se puede eliminar el usuario: participa en {participaciones.Count} viaje(s). " +
+                    "Primero hay que darlo de baja de cada viaje, lo que a su vez exige que no tenga saldos pendientes.");
 
             _usuarioRepository.Delete(id);
         }

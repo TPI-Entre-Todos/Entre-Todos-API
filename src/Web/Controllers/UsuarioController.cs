@@ -63,7 +63,8 @@ namespace Web.Controllers
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
-            _usuarioService.Delete(id);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            _usuarioService.Delete(id, usuarioId, esAdmin);
             return NoContent();
         }
 

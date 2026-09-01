@@ -13,7 +13,7 @@ namespace Application.Interfaces
         UsuarioDto GetById(int id);
         UsuarioDto Update(int id, UsuarioRequest request, int usuarioAutenticadoId, bool esAdmin);
         UsuarioDto CambiarRol(int id, Rol rol);
-        void Delete(int id);
+        void Delete(int id, int usuarioAutenticadoId, bool esAdmin);
 
         /// <summary>
         /// Resuelve el usuario local a partir de un id token de Cognito ya validado.
