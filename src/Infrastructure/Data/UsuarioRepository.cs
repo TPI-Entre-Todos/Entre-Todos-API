@@ -18,4 +18,9 @@ public class UsuarioRepository : GenericRepository<Usuario>, IUsuarioRepository
         return _context.Usuarios.FirstOrDefault(u => u.Email == email);
     }
 
+    public Usuario? GetByCognitoSub(string cognitoSub)
+    {
+        return _context.Usuarios.FirstOrDefault(u => u.CognitoSub == cognitoSub);
+    }
+
 }

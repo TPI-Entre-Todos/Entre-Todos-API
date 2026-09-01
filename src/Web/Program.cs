@@ -5,12 +5,16 @@ using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Infrastructure.Services;
 using Microsoft.OpenApi;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Application;
 
 using Web.Middlewares;
 
+// Cognito no usa el mapeo de claims por defecto de .NET: conservamos los nombres
+// originales del token ("sub", "email", "cognito:username", "client_id").
+JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,7 +32,6 @@ if (builder.Environment.IsProduction())
 builder.Services.AddControllers();
 builder.Services.AddTransient<GlobalExceptionHandlingMiddleware>();
 
-builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IViajeRepository, ViajeRepository>();
 builder.Services.AddScoped<IViajeService, ViajeService>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
@@ -91,20 +94,93 @@ builder.Services.AddOpenApi(options =>
 
 
 
-builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
+var cognitoRegion = builder.Configuration["Cognito:Region"]
+    ?? throw new InvalidOperationException("Cognito:Region no está configurado.");
+var cognitoUserPoolId = builder.Configuration["Cognito:UserPoolId"]
+    ?? throw new InvalidOperationException("Cognito:UserPoolId no está configurado.");
+var cognitoClientId = builder.Configuration["Cognito:ClientId"]
+    ?? throw new InvalidOperationException("Cognito:ClientId no está configurado.");
+
+var cognitoAuthority = $"https://cognito-idp.{cognitoRegion}.amazonaws.com/{cognitoUserPoolId}";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
-    options.TokenValidationParameters = new TokenValidationParameters
+    // Cognito publica su JWKS en {Authority}/.well-known/jwks.json y .NET lo resuelve
+    // solo vía OIDC discovery: no hay que configurar ni rotar claves a mano.
+    options.Authority = cognitoAuthority;
+    options.TokenValidationParameters = new()
     {
         ValidateIssuer = true,
+        ValidIssuer = cognitoAuthority,
+
+        // Esta configuración espera el ID TOKEN, que sí trae el claim "aud" con el ClientId.
+        // Si en algún momento el front pasa a mandar el ACCESS TOKEN, hay que poner
+        // ValidateAudience = false y validar a mano el claim "client_id", porque el
+        // access token de Cognito no tiene "aud". Tener en cuenta que el access token
+        // tampoco trae "email" ni "name", que son los que usa el alta automática de usuarios.
         ValidateAudience = true,
+        ValidAudience = cognitoClientId,
+
+        ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Authentication:Issuer"],
-        ValidAudience = builder.Configuration["Authentication:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Authentication:SecretForKey"]))
+
+        NameClaimType = "cognito:username",
+        // El rol NO sale de "cognito:groups": es nuestro, vive en la tabla Usuarios y se
+        // inyecta abajo en OnTokenValidated. Así el panel de administración puede cambiarlo
+        // con efecto inmediato, sin depender de que el usuario renueve su token.
+        RoleClaimType = ClaimTypes.Role,
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = context =>
+        {
+            var principal = context.Principal!;
+
+            // El id token y el access token se firman igual, así que la validación de firma
+            // no alcanza para distinguirlos: sin este chequeo alguien podría mandar un access
+            // token y pasar la validación sin traer los claims que damos por sentados.
+            var tokenUse = principal.FindFirst("token_use")?.Value;
+            if (tokenUse != "id")
+            {
+                context.Fail("Se esperaba un id token de Cognito.");
+                return Task.CompletedTask;
+            }
+
+            if (string.IsNullOrEmpty(principal.FindFirst("sub")?.Value))
+            {
+                context.Fail("El token no contiene el claim 'sub'.");
+                return Task.CompletedTask;
+            }
+
+            // Alta automática (JIT provisioning): la primera vez que llega un token válido
+            // de alguien que todavía no está en nuestra base, se le crea el registro local.
+            // Se hace acá y no sólo en GET /me porque los controllers necesitan el Id local
+            // en CADA request (ver el claim NameIdentifier que agregamos más abajo).
+            var usuarioService = context.HttpContext.RequestServices.GetRequiredService<IUsuarioService>();
+            var usuario = usuarioService.GetOrCreateFromToken(principal);
+
+            var identity = (ClaimsIdentity)principal.Identity!;
+
+            // Los controllers resuelven el usuario con int.Parse(NameIdentifier) porque antes
+            // el JWT propio emitía ahí el Id de la tabla Usuarios. El token de Cognito no trae
+            // ese claim (su identificador es "sub", un GUID), así que lo reponemos con el Id
+            // local para no tener que tocar los seis controllers que dependen de él.
+            identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()));
+
+            // Idem con el rol, para que los [Authorize(Roles = "Admin")] sigan funcionando.
+            identity.AddClaim(new Claim(ClaimTypes.Role, usuario.Rol.ToString()));
+
+            return Task.CompletedTask;
+        }
     };
 });
 
-builder.Services.Configure<AutenticacionServiceOptions>(builder.Configuration.GetSection("Authentication"));
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
+builder.Services.AddCors(options => options.AddPolicy("Front", policy => policy
+    .WithOrigins(corsOrigins)
+    .AllowAnyHeader()
+    .AllowAnyMethod()));
 
 builder.Services.AddHttpClient("brevoClient", client =>
             {
@@ -142,6 +218,7 @@ else
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
+app.UseCors("Front");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

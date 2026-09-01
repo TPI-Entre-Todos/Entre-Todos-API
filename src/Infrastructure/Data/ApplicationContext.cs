@@ -24,7 +24,15 @@ namespace Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Usuario>().HasData(CreateUsuarioSeed());
+            // Identidad federada: el "sub" de Cognito es la clave estable del usuario.
+            // Índice único para garantizar que un mismo usuario de Cognito no se duplique en la base.
+            modelBuilder.Entity<Usuario>(usuario =>
+            {
+                usuario.Property(u => u.CognitoSub).HasMaxLength(64);
+                usuario.HasIndex(u => u.CognitoSub).IsUnique();
+                usuario.Property(u => u.AvatarUrl).HasMaxLength(500);
+            });
+
             // 1. Configuración de Relación: Un Gasto pertenece a un ParticipanteViaje (El que pagó)
             modelBuilder.Entity<Gasto>()
                 .HasOne(g => g.Participante)
@@ -73,13 +81,6 @@ namespace Infrastructure.Data
                 .WithMany()
                 .UsingEntity("PagosDetallesGasto");
 
-        }
-        private Usuario[] CreateUsuarioSeed()
-        {
-            return new[]
-            {
-                    new Usuario { Id = 1, Nombre="Admin", Email="admin@entretodos.com",Password="Admin123!", FechaRegistro= new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc), Rol= Rol.Admin }
-            };
         }
     }
 

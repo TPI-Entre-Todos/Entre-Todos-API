@@ -3,6 +3,7 @@ using Application.Models.Requests;
 using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 namespace Web.Controllers
 {
     [ApiController]
@@ -18,12 +19,13 @@ namespace Web.Controllers
             _usuarioService = usuarioService;
         }
 
-        [AllowAnonymous]
-        [HttpPost]
-        public IActionResult Add(UsuarioRequest request)
+        // El alta de usuarios la hace Cognito. Acá sólo se devuelve el perfil local,
+        // que se crea automáticamente la primera vez que llega un token válido.
+        [HttpGet("me")]
+        public IActionResult GetMe()
         {
-            var result = _usuarioService.Add(request);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            var usuario = _usuarioService.GetOrCreateFromToken(User);
+            return Ok(usuario);
         }
 
         [HttpGet]
@@ -45,7 +47,8 @@ namespace Web.Controllers
         [HttpPut("{id:int}")]
         public IActionResult Update(int id, UsuarioRequest request)
         {
-            var updated = _usuarioService.Update(id, request);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            var updated = _usuarioService.Update(id, request, usuarioId, esAdmin);
             return Ok(updated);
         }
 
@@ -62,6 +65,13 @@ namespace Web.Controllers
         {
             _usuarioService.Delete(id);
             return NoContent();
+        }
+
+        private (int usuarioId, bool esAdmin) ObtenerIdentidad()
+        {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.IsInRole("Admin");
+            return (usuarioId, esAdmin);
         }
 
     }
