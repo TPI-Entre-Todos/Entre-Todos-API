@@ -17,7 +17,7 @@ EntreTodos API permite a los usuarios:
 - dividir gastos con distintos tipos de reglas;
 - registrar pagos entre participantes;
 - gestionar notificaciones básicas;
-- autenticar usuarios mediante JWT.
+- autenticarse mediante AWS Cognito.
 
 ## Arquitectura
 
@@ -42,7 +42,8 @@ Esta estructura facilita la separación entre lógica de negocio, acceso a datos
 | Entity Framework Core | 10.0.7 | ORM y manejo de datos |
 | Pomelo EF Core MySql | 9.0.0 | Proveedor de EF Core para MySQL |
 | MySQL | 8.x | Base de datos de producción y desarrollo |
-| JWT / Bearer | 8.18.0 | Autenticación y autorización |
+| AWS Cognito | — | Proveedor de identidad (login y registro) |
+| JWT Bearer | 8.18.0 | Validación de los tokens emitidos por Cognito |
 | Swagger / OpenAPI | 10.1.7 | Documentación interactiva |
 
 ## Estructura del proyecto
@@ -73,7 +74,9 @@ src/
 - Dependency Injection: los servicios y repositorios se resuelven desde el contenedor de ASP.NET Core.
 - Middleware global de excepciones: centraliza el manejo de errores y devuelve respuestas HTTP consistentes.
 - DTOs y modelos de request/response: separan la capa de presentación del dominio interno.
-- Autenticación con JWT: protege los endpoints y permite diferenciar roles de usuario y administrador.
+- Autenticación delegada en AWS Cognito: el login lo resuelve el frontend contra el User Pool y la API se limita a validar la firma del `id_token` contra el JWKS. La API no recibe contraseñas ni consulta el SDK de AWS.
+- Rol propio del dominio: la autorización no se apoya en los grupos de Cognito sino en la columna `Rol` de la tabla `Usuarios`, de modo que un cambio de rol tiene efecto inmediato sin esperar a que el usuario renueve su token.
+- Alta automática de usuarios (JIT provisioning): la primera vez que llega un token válido de alguien que todavía no está en la base, se le crea el registro local.
 
 ## Requisitos previos
 
@@ -96,43 +99,68 @@ cd Entre-Todos-API
 dotnet restore
 ```
 
-### 3. Configurar la base de datos
+### 3. Configurar la cadena de conexión
 
-La API usa `ConnectionStrings:DefaultConnection` desde los archivos de configuración:
+La cadena de conexión **no está versionada**, porque contiene la contraseña de la base. Cada integrante define la suya como variable de entorno de usuario:
 
-- `src/Web/appsettings.Development.json`
-- `src/Web/appsettings.Production.json`
+| Variable | Valor |
+|---|---|
+| `ConnectionStrings__DefaultConnection` | `server=localhost;port=3306;database=EntreTodosDB;user=root;password=TU_PASSWORD;` |
 
-Ejemplo de conexión local:
+El doble guion bajo (`__`) es el separador de jerarquía que usa .NET para representar `ConnectionStrings:DefaultConnection` en una variable de entorno.
 
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "server=localhost;port=3306;database=EntreTodosDB;user=root;password=;"
-}
+En Windows se puede cargar desde *Editar las variables de entorno del sistema → Variables de usuario*, o por PowerShell:
+
+```powershell
+[Environment]::SetEnvironmentVariable("ConnectionStrings__DefaultConnection", "server=localhost;port=3306;database=EntreTodosDB;user=root;password=TU_PASSWORD;", "User")
 ```
 
-### 4. Ejecutar la API
+Hay que **reiniciar la terminal y el IDE** para que tomen la variable. Si falta, la API no arranca y muestra `Connection string 'DefaultConnection' no encontrada`.
+
+### 4. Confiar el certificado de desarrollo
+
+La API escucha en HTTPS (`https://localhost:7248`). Sin este paso el navegador bloquea las llamadas del frontend:
+
+```bash
+dotnet dev-certs https --trust
+```
+
+### 5. Ejecutar la API
 
 ```bash
 dotnet run --project src/Web/Web.csproj
 ```
 
-La API queda disponible en el puerto configurado por el entorno y expone Swagger/OpenAPI para explorar los endpoints.
+Queda disponible en `https://localhost:7248`, con Swagger en `/swagger/index.html`. Las migraciones pendientes se aplican solas al arrancar.
+
+> **Importante para el frontend:** hay que apuntar a `https://localhost:7248`, no a `http://localhost:5101`. En desarrollo está activa la redirección a HTTPS, y el preflight de CORS (`OPTIONS`) sobre HTTP devuelve un `307` sin headers de CORS. Como los navegadores no siguen redirecciones en el preflight, la llamada falla con `Failed to fetch` sin llegar a la API.
+
+## Autenticación
+
+El login y el registro los resuelve **AWS Cognito** desde el frontend; la API no expone endpoints para eso. El frontend obtiene un `id_token` y lo envía en cada request:
+
+```http
+Authorization: Bearer <id_token>
+```
+
+Puntos a tener en cuenta al integrar un cliente:
+
+- Hay que enviar el **`id_token`**, no el `access_token`. La API rechaza el segundo con un `401`, porque no incluye los claims `email` ni `name` que usa el alta automática de usuarios.
+- Los orígenes habilitados para CORS se configuran en `Cors:AllowedOrigins`. En desarrollo ya viene cargado `http://localhost:5173`.
+- La configuración del User Pool (`Cognito:Region`, `Cognito:UserPoolId`, `Cognito:ClientId`) sí está versionada: no son valores secretos, viajan igual en el bundle del frontend.
 
 ## Endpoints principales
 
-### Autenticación
-
-- `POST /api/authentication/authenticate`
+Todos los endpoints requieren un `id_token` válido. Los marcados como *(Admin)* exigen además el rol correspondiente.
 
 ### Usuarios
 
-- `POST /api/usuario`
-- `GET /api/usuario`
-- `GET /api/usuario/{id}`
-- `PUT /api/usuario/{id}`
-- `PATCH /api/usuario/{id}/rol`
-- `DELETE /api/usuario/{id}`
+- `GET /api/usuario/me` — perfil del usuario autenticado; lo crea si es la primera vez
+- `GET /api/usuario` *(Admin)*
+- `GET /api/usuario/{id}` *(Admin)*
+- `PUT /api/usuario/{id}` — sólo el nombre; Admin, o el propio usuario
+- `PATCH /api/usuario/{id}/rol` *(Admin)*
+- `DELETE /api/usuario/{id}` — Admin, o el propio usuario
 
 ### Viajes
 
@@ -156,14 +184,25 @@ La API queda disponible en el puerto configurado por el entorno y expone Swagger
 
 ## Despliegue en AWS
 
-El proyecto está preparado para ejecutarse en un entorno de producción con configuración externa para la cadena de conexión y variables sensibles. En particular, la aplicación toma la conexión a MySQL desde `ConnectionStrings:DefaultConnection`, lo que permite desplegarla de forma sencilla en servicios como Elastic Beanstalk, EC2 o entornos containerizados en AWS.
+El despliegue a Elastic Beanstalk está automatizado con GitHub Actions (`.github/workflows/deploy.yml`) y se dispara con cada push a `main`.
+
+Los valores sensibles y los que dependen del entorno se cargan como *environment properties* de Elastic Beanstalk, nunca en el repositorio:
+
+| Variable | Contenido |
+|---|---|
+| `ConnectionStrings__DefaultConnection` | Cadena de conexión a la base de producción |
+| `Brevo__ApiKey` | API key del servicio de mails |
+| `Cors__AllowedOrigins__0` | Origen del frontend productivo |
+| `ASPNETCORE_ENVIRONMENT` | `Production` |
+
+El índice numérico de `Cors__AllowedOrigins__0` corresponde a la posición dentro del arreglo; si hiciera falta habilitar más de un origen, se agregan `__1`, `__2`, etc.
 
 ## Estado del proyecto
 
 Actualmente la API cuenta con:
 
 - arquitectura en capas;
-- autenticación JWT;
+- autenticación delegada en AWS Cognito;
 - manejo centralizado de excepciones;
 - persistencia con EF Core y MySQL;
 - despliegue orientado a entornos de producción.
