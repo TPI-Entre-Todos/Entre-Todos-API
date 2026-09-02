@@ -53,8 +53,7 @@ builder.Services.AddScoped<IDetalleGastoService, DetalleGastoService>();
 
 
 // journal mode
-var connectionString =
-    builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException(
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException(
         "Connection string 'DefaultConnection' no encontrada.");
 
 builder.Services.AddDbContext<ApplicationContext>(options =>
