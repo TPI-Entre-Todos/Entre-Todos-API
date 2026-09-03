@@ -20,5 +20,16 @@ namespace Application.Interfaces
         /// Si todavía no existe, lo crea (JIT provisioning).
         /// </summary>
         UsuarioDto GetOrCreateFromToken(ClaimsPrincipal principal);
+
+        /// <summary>
+        /// Reemplaza la foto de perfil. Un usuario sólo puede cambiar la propia, salvo que sea Admin.
+        /// </summary>
+        Task<UsuarioDto> ActualizarAvatarAsync(
+            int id,
+            Stream contenido,
+            long tamanio,
+            int usuarioAutenticadoId,
+            bool esAdmin,
+            CancellationToken cancellationToken = default);
     }
 }

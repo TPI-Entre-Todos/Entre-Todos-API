@@ -12,15 +12,20 @@ namespace Application.Services
 {
     public class UsuarioService : IUsuarioService
     {
+        private const string ContenedorAvatares = "avatars";
+
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IParticipanteViajeRepository _participanteViajeRepository;
+        private readonly IFileStorageService _fileStorageService;
 
         public UsuarioService(
             IUsuarioRepository usuarioRepository,
-            IParticipanteViajeRepository participanteViajeRepository)
+            IParticipanteViajeRepository participanteViajeRepository,
+            IFileStorageService fileStorageService)
         {
             _usuarioRepository = usuarioRepository;
             _participanteViajeRepository = participanteViajeRepository;
+            _fileStorageService = fileStorageService;
         }
 
         public List<UsuarioDto> GetAll()
@@ -115,6 +120,60 @@ namespace Application.Services
                     "Primero hay que darlo de baja de cada viaje, lo que a su vez exige que no tenga saldos pendientes.");
 
             _usuarioRepository.Delete(id);
+        }
+
+        public async Task<UsuarioDto> ActualizarAvatarAsync(
+            int id,
+            Stream contenido,
+            long tamanio,
+            int usuarioAutenticadoId,
+            bool esAdmin,
+            CancellationToken cancellationToken = default)
+        {
+            if (id <= 0)
+                throw new BadRequestException("Id de usuario inválido.");
+
+            if (!esAdmin && id != usuarioAutenticadoId)
+                throw new Domain.Exceptions.UnauthorizedAccessException("Sólo podés cambiar tu propia foto de perfil.");
+
+            var usuario = _usuarioRepository.GetById(id);
+            if (usuario == null)
+                throw new NotFoundException("Usuario no encontrado.");
+
+            var extension = ValidadorImagen.ValidarYObtenerExtension(contenido, tamanio);
+
+            // Nombre aleatorio: si se usara el Id del usuario, las fotos serían adivinables
+            // y enumerables, y el bucket es de lectura pública.
+            var nombreArchivo = $"{Guid.NewGuid():N}{extension}";
+
+            var urlAnterior = usuario.AvatarUrl;
+
+            var urlNueva = await _fileStorageService.SubirAsync(
+                contenido,
+                nombreArchivo,
+                ValidadorImagen.ContentTypePara(extension),
+                ContenedorAvatares,
+                cancellationToken);
+
+            usuario.AvatarUrl = urlNueva;
+            _usuarioRepository.Update(usuario);
+
+            // El archivo viejo se borra recién con la nueva foto ya subida y persistida: si
+            // fallara antes, el usuario quedaría apuntando a un archivo inexistente. Un borrado
+            // fallido acá sólo deja un huérfano en el bucket, que es el error más barato.
+            if (!string.IsNullOrWhiteSpace(urlAnterior))
+            {
+                try
+                {
+                    await _fileStorageService.EliminarAsync(urlAnterior, ContenedorAvatares, cancellationToken);
+                }
+                catch
+                {
+                    // Ignorado a propósito: el avatar nuevo ya quedó guardado y funcionando.
+                }
+            }
+
+            return UsuarioDto.Create(usuario);
         }
 
         public UsuarioDto GetOrCreateFromToken(ClaimsPrincipal principal)

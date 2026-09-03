@@ -1,3 +1,5 @@
+using Amazon;
+using Amazon.S3;
 using Application.Interfaces;
 using Application.Services;
 using Domain.Interfaces;
@@ -49,6 +51,13 @@ builder.Services.AddScoped<INotificacionRepository, NotificacionRepository>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();
 builder.Services.AddScoped<IDetalleGastoRepository, DetalleGastoRepository>();
 builder.Services.AddScoped<IDetalleGastoService, DetalleGastoService>();
+
+// Las credenciales salen de la cadena por defecto del SDK: en local, el perfil de AWS
+// configurado en la máquina; en Elastic Beanstalk, el rol de la instancia. Así no hay
+// claves de AWS en la configuración ni en el repositorio.
+builder.Services.AddSingleton<IAmazonS3>(_ => new AmazonS3Client(
+    RegionEndpoint.GetBySystemName(builder.Configuration["S3:Region"] ?? "us-east-1")));
+builder.Services.AddScoped<IFileStorageService, S3FileStorageService>();
 
 
 

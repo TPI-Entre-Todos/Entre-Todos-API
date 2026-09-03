@@ -52,6 +52,24 @@ namespace Web.Controllers
             return Ok(updated);
         }
 
+        // El archivo llega como multipart/form-data en el campo "archivo".
+        [HttpPost("{id:int}/avatar")]
+        [RequestSizeLimit(3 * 1024 * 1024)]
+        public async Task<IActionResult> SubirAvatar(int id, IFormFile archivo, CancellationToken cancellationToken)
+        {
+            if (archivo == null || archivo.Length == 0)
+                return BadRequest("No se recibió ningún archivo.");
+
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+
+            using var contenido = archivo.OpenReadStream();
+
+            var actualizado = await _usuarioService.ActualizarAvatarAsync(
+                id, contenido, archivo.Length, usuarioId, esAdmin, cancellationToken);
+
+            return Ok(actualizado);
+        }
+
         [HttpPatch("{id:int}/rol")]
         [Authorize(Roles = "Admin")]
         public IActionResult CambiarRol(int id, [FromBody] Rol rol)
