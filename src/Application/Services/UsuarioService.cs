@@ -201,14 +201,43 @@ namespace Application.Services
                 return UsuarioDto.Create(_usuarioRepository.Update(porEmail));
             }
 
-            var nombre = principal.FindFirst("name")?.Value
-                ?? principal.FindFirst("cognito:username")?.Value
-                ?? email;
-
-            var usuario = new Usuario(nombre.Trim(), email, cognitoSub);
+            var usuario = new Usuario(ResolverNombre(principal, email), email, cognitoSub);
 
             _usuarioRepository.Add(usuario);
             return UsuarioDto.Create(usuario);
+        }
+
+        /// <summary>
+        /// Resuelve el nombre para mostrar a partir de los claims del id token.
+        /// </summary>
+        /// <remarks>
+        /// A propósito no se usa "cognito:username" como respaldo: en los logins federados
+        /// ese claim es un identificador interno de Cognito con el formato
+        /// "google_104069820784340941073". Estaba en la cadena y era exactamente lo que
+        /// terminaba guardado como nombre visible cuando faltaba "name".
+        ///
+        /// "name" sólo viaja si el cliente pidió el scope "profile"; los demás eslabones
+        /// cubren el caso en que no esté, para no dar de alta a nadie con un nombre ilegible.
+        /// </remarks>
+        private static string ResolverNombre(ClaimsPrincipal principal, string email)
+        {
+            var name = principal.FindFirst("name")?.Value?.Trim();
+            if (!string.IsNullOrWhiteSpace(name))
+                return name;
+
+            // Algunos proveedores mandan el nombre partido en vez de "name".
+            var completo = string.Join(' ', new[]
+            {
+                principal.FindFirst("given_name")?.Value?.Trim(),
+                principal.FindFirst("family_name")?.Value?.Trim()
+            }.Where(p => !string.IsNullOrWhiteSpace(p)));
+
+            if (!string.IsNullOrWhiteSpace(completo))
+                return completo;
+
+            // Último recurso: la parte local del email, más presentable que el email entero.
+            var local = email.Split('@')[0].Trim();
+            return string.IsNullOrWhiteSpace(local) ? "Usuario" : local;
         }
     }
 }
