@@ -26,10 +26,73 @@ public class S3FileStorageService : IFileStorageService
         CancellationToken cancellationToken = default)
     {
         var bucket = ResolverBucket(contenedor);
+        var key = await SubirObjetoAsync(bucket, contenido, nombreArchivo, contentType, contenedor, cancellationToken);
 
+        return $"https://{bucket}.s3.{ResolverRegion()}.amazonaws.com/{key}";
+    }
+
+    public async Task EliminarAsync(
+        string url,
+        string contenedor,
+        CancellationToken cancellationToken = default)
+    {
+        var bucket = ResolverBucket(contenedor);
+
+        var key = ExtraerKeyDeUrl(url, bucket);
+        if (key == null)
+            return;
+
+        // S3 no distingue borrar un objeto inexistente de uno que sí estaba: en ambos casos
+        // responde OK. Eso hace que reemplazar un avatar sea idempotente sin chequeos previos.
+        await _s3.DeleteObjectAsync(bucket, key, cancellationToken);
+    }
+
+    public async Task<string> SubirPrivadoAsync(
+        Stream contenido,
+        string nombreArchivo,
+        string contentType,
+        string contenedor,
+        CancellationToken cancellationToken = default)
+    {
+        var bucket = ResolverBucket(contenedor);
+        return await SubirObjetoAsync(bucket, contenido, nombreArchivo, contentType, contenedor, cancellationToken);
+    }
+
+    public string ObtenerUrlFirmada(string key, string contenedor, TimeSpan vigencia)
+    {
+        var bucket = ResolverBucket(contenedor);
+
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = bucket,
+            Key = key,
+            Verb = HttpVerb.GET,
+            Expires = DateTime.UtcNow.Add(vigencia)
+        };
+
+        return _s3.GetPreSignedURL(request);
+    }
+
+    public async Task EliminarPorKeyAsync(
+        string key,
+        string contenedor,
+        CancellationToken cancellationToken = default)
+    {
+        var bucket = ResolverBucket(contenedor);
+        await _s3.DeleteObjectAsync(bucket, key, cancellationToken);
+    }
+
+    private async Task<string> SubirObjetoAsync(
+        string bucket,
+        Stream contenido,
+        string nombreArchivo,
+        string contentType,
+        string contenedor,
+        CancellationToken cancellationToken)
+    {
         // El contenedor se usa también como prefijo de la clave para que coincida con el
-        // alcance de la bucket policy (arn:...:bucket/avatars/*): así lo que se sube fuera
-        // de ese prefijo no queda público por arrastre.
+        // alcance de la bucket policy / política IAM (arn:...:bucket/avatars/*): así lo que
+        // se sube fuera de ese prefijo no queda accesible por arrastre.
         var key = $"{contenedor}/{nombreArchivo}";
 
         var request = new PutObjectRequest
@@ -42,23 +105,7 @@ public class S3FileStorageService : IFileStorageService
 
         await _s3.PutObjectAsync(request, cancellationToken);
 
-        return $"https://{bucket}.s3.{ResolverRegion()}.amazonaws.com/{key}";
-    }
-
-    public async Task EliminarAsync(
-        string url,
-        string contenedor,
-        CancellationToken cancellationToken = default)
-    {
-        var bucket = ResolverBucket(contenedor);
-
-        var key = ExtraerKey(url, bucket);
-        if (key == null)
-            return;
-
-        // S3 no distingue borrar un objeto inexistente de uno que sí estaba: en ambos casos
-        // responde OK. Eso hace que reemplazar un avatar sea idempotente sin chequeos previos.
-        await _s3.DeleteObjectAsync(bucket, key, cancellationToken);
+        return key;
     }
 
     private string ResolverBucket(string contenedor)
@@ -78,7 +125,7 @@ public class S3FileStorageService : IFileStorageService
     /// Recupera la clave del objeto a partir de la URL pública. Devuelve null si la URL
     /// no pertenece a este bucket, para no borrar por accidente algo de otro origen.
     /// </summary>
-    private static string? ExtraerKey(string url, string bucket)
+    private static string? ExtraerKeyDeUrl(string url, string bucket)
     {
         if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
             return null;

@@ -29,26 +29,52 @@ namespace Web.Controllers
         [HttpGet]
         public IActionResult Get()
         {
-            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin";
+            var (userId, _) = ObtenerIdentidad();
+            bool esAdmin = User.IsInRole("Admin");
 
             var viajes = _viajeService.Get(userId, esAdmin);
             return Ok(viajes);
         }
+
         [HttpGet("{id:int}")]
         public IActionResult GetById([FromRoute] int id)
         {
-            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            bool esAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "Admin"; 
+            var (userId, esAdmin) = ObtenerIdentidad();
             var viaje = _viajeService.GetById(id, userId, esAdmin);
             return Ok(viaje);
         }
 
-        [HttpDelete("{id:int}")]
-        public IActionResult Delete([FromRoute] int id)
+        // El archivo llega como multipart/form-data en el campo "archivo".
+        [HttpPost("{id:int}/portada")]
+        [RequestSizeLimit(6 * 1024 * 1024)]
+        public async Task<IActionResult> SubirPortada(int id, IFormFile archivo, CancellationToken cancellationToken)
         {
-            _viajeService.Delete(id);
+            if (archivo == null || archivo.Length == 0)
+                return BadRequest("No se recibió ningún archivo.");
+
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+
+            using var contenido = archivo.OpenReadStream();
+
+            var actualizado = await _viajeService.ActualizarPortadaAsync(
+                id, contenido, archivo.Length, usuarioId, esAdmin, cancellationToken);
+
+            return Ok(actualizado);
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
+        {
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            await _viajeService.DeleteAsync(id, usuarioId, esAdmin, cancellationToken);
             return NoContent();
+        }
+
+        private (int usuarioId, bool esAdmin) ObtenerIdentidad()
+        {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.IsInRole("Admin");
+            return (usuarioId, esAdmin);
         }
     }
 }

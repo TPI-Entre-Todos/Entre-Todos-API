@@ -8,9 +8,13 @@ public class ViajeDto
     public string? Nombre { get; set; }
     public string? Descripcion { get; set; }
     public string? Moneda { get; set; }
+    public string? PortadaUrl { get; set; }
 
     public DateTime FechaCreacion { get; set; }
-    public static ViajeDto Create(Viaje viaje)
+
+    // La URL no sale de la entidad: el bucket es privado y se firma con vencimiento
+    // recién acá, después de que el service ya validó que quien pide el viaje puede verlo.
+    public static ViajeDto Create(Viaje viaje, string? portadaUrl = null)
     {
         return new ViajeDto
         {
@@ -18,6 +22,7 @@ public class ViajeDto
             Nombre = viaje.Nombre,
             Descripcion = viaje.Descripcion,
             Moneda = viaje.Moneda,
+            PortadaUrl = portadaUrl,
             FechaCreacion = viaje.FechaCreacion
         };
     }

@@ -12,6 +12,11 @@ namespace Domain.Entities
         public string Descripcion { get; set; }
         public DateTime FechaCreacion { get; set; }
         public string Moneda { get; set; }
+
+        // Key del objeto en S3 (no una URL): el bucket es privado, así que la URL real se
+        // firma con vencimiento recién al armar el ViajeDto, nunca se persiste.
+        public string? PortadaKey { get; set; }
+
         public ICollection<ParticipanteViaje> Participantes { get; set; } = new List<ParticipanteViaje>();
         public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
         public ICollection<Gasto> Gastos { get; set; } = new List<Gasto>();

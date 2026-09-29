@@ -33,6 +33,13 @@ namespace Infrastructure.Data
                 usuario.Property(u => u.AvatarUrl).HasMaxLength(500);
             });
 
+            // Es una key de S3 ("portadas/<guid>.jpg"), no una URL: alcanza con menos espacio
+            // que AvatarUrl.
+            modelBuilder.Entity<Viaje>(viaje =>
+            {
+                viaje.Property(v => v.PortadaKey).HasMaxLength(300);
+            });
+
             // 1. Configuración de Relación: Un Gasto pertenece a un ParticipanteViaje (El que pagó)
             modelBuilder.Entity<Gasto>()
                 .HasOne(g => g.Participante)

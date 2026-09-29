@@ -18,14 +18,14 @@ namespace Application.Services
         /// de la extensión: los dos los controla el cliente y se pueden falsear para subir
         /// un ejecutable diciendo que es un JPEG.
         /// </remarks>
-        public static string ValidarYObtenerExtension(Stream contenido, long tamanio)
+        public static string ValidarYObtenerExtension(Stream contenido, long tamanio, long tamanioMaximo = TamanioMaximoBytes)
         {
             if (tamanio <= 0)
                 throw new BadRequestException("El archivo está vacío.");
 
-            if (tamanio > TamanioMaximoBytes)
+            if (tamanio > tamanioMaximo)
                 throw new BadRequestException(
-                    $"La imagen supera el tamaño máximo de {TamanioMaximoBytes / 1024 / 1024} MB.");
+                    $"La imagen supera el tamaño máximo de {tamanioMaximo / 1024 / 1024} MB.");
 
             var cabecera = LeerCabecera(contenido);
 

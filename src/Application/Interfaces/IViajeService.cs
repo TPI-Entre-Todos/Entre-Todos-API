@@ -9,8 +9,18 @@ namespace Application.Interfaces
         List<ViajeDto> Get(int userId, bool esAdmin);
         ViajeDto? GetById(int id, int userId, bool esAdmin);
 
-        void Delete(int id);
+        Task DeleteAsync(int id, int usuarioAutenticadoId, bool esAdmin, CancellationToken cancellationToken = default);
 
-
+        /// <summary>
+        /// Reemplaza la foto de portada del viaje. Sólo puede hacerlo el organizador del
+        /// viaje o un Admin.
+        /// </summary>
+        Task<ViajeDto> ActualizarPortadaAsync(
+            int id,
+            Stream contenido,
+            long tamanio,
+            int usuarioAutenticadoId,
+            bool esAdmin,
+            CancellationToken cancellationToken = default);
     }
 }
