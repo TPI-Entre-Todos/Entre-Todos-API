@@ -36,6 +36,32 @@ namespace Application.Services
             throw new BadRequestException("El archivo no es una imagen válida. Formatos aceptados: JPEG, PNG y WebP.");
         }
 
+        /// <summary>
+        /// Igual que <see cref="ValidarYObtenerExtension"/> pero además acepta PDF.
+        /// </summary>
+        public static string ValidarComprobanteYObtenerExtension(Stream contenido, long tamanio, long tamanioMaximo = TamanioMaximoBytes)
+        {
+            if (tamanio <= 0)
+                throw new BadRequestException("El archivo está vacío.");
+
+            if (tamanio > tamanioMaximo)
+                throw new BadRequestException(
+                    $"El archivo supera el tamaño máximo de {tamanioMaximo / 1024 / 1024} MB.");
+
+            var cabecera = LeerCabecera(contenido);
+
+            if (EsJpeg(cabecera)) return ".jpg";
+            if (EsPng(cabecera)) return ".png";
+            if (EsWebp(cabecera)) return ".webp";
+            if (EsPdf(cabecera)) return ".pdf";
+
+            throw new BadRequestException("El archivo no es válido. Formatos aceptados: JPEG, PNG, WebP y PDF.");
+        }
+
+        // "%PDF-"
+        private static bool EsPdf(byte[] b) =>
+            b.Length >= 5 && b[0] == 0x25 && b[1] == 0x50 && b[2] == 0x44 && b[3] == 0x46 && b[4] == 0x2D;
+
         private static byte[] LeerCabecera(Stream contenido)
         {
             if (!contenido.CanSeek)
@@ -70,6 +96,7 @@ namespace Application.Services
             ".jpg" => "image/jpeg",
             ".png" => "image/png",
             ".webp" => "image/webp",
+            ".pdf" => "application/pdf",
             _ => "application/octet-stream"
         };
     }

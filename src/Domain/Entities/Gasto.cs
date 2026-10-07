@@ -12,13 +12,13 @@ namespace Domain.Entities
         public DateTime Fecha { get; set; }
         public TipoDivision TipoDivision { get; set; }
         public string? Categoria { get; set; }
-        public string? Comprobante { get; set; }
+        public string? ComprobanteKey { get; set; }
 
         public Viaje? Viaje { get; set; }
         public ParticipanteViaje? Participante { get; set; }
         public ICollection<DetalleGasto> DetallesGasto { get; set; } = [];
 
-        public Gasto(int viajeId, int participanteId, string descripcion, decimal monto, TipoDivision tipoDivision, string? categoria, string? comprobante)
+        public Gasto(int viajeId, int participanteId, string descripcion, decimal monto, TipoDivision tipoDivision, string? categoria)
         {
             ViajeId = viajeId;
             ParticipanteId = participanteId;
@@ -27,7 +27,6 @@ namespace Domain.Entities
             TipoDivision = tipoDivision;
             Fecha = DateTime.UtcNow;
             Categoria = categoria;
-            Comprobante = comprobante;
         }
 
         public Gasto() { }

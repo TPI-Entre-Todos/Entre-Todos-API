@@ -13,10 +13,10 @@ namespace Application.Models
         public string Fecha { get; set; } = string.Empty;
         public TipoDivision TipoDivision { get; set; }
         public string? Categoria { get; set; }
-        public string? Comprobante { get; set; }
+        public string? ComprobanteUrl { get; set; }
         public ICollection<DetalleGastoDto> Detalles { get; set; } = [];
 
-        public static GastoDto Create(Gasto gasto)
+        public static GastoDto Create(Gasto gasto, string? comprobanteUrl = null)
         {
             return new GastoDto
             {
@@ -28,16 +28,16 @@ namespace Application.Models
                 Fecha = gasto.Fecha.ToString("dd/MM/yyyy HH:mm:ss"),
                 TipoDivision = gasto.TipoDivision,
                 Categoria = gasto.Categoria,
-                Comprobante = gasto.Comprobante,
+                ComprobanteUrl = comprobanteUrl,
                 Detalles = gasto.DetallesGasto != null
                     ? gasto.DetallesGasto.Select(DetalleGastoDto.Create).ToList()
                     : []
             };
         }
 
-        public static List<GastoDto> CreateList(List<Gasto> gastos)
+        public static List<GastoDto> CreateList(List<Gasto> gastos, Func<Gasto, string?>? resolverComprobanteUrl = null)
         {
-            return gastos.Select(Create).ToList();
+            return gastos.Select(g => Create(g, resolverComprobanteUrl?.Invoke(g))).ToList();
         }
     }
 }

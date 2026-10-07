@@ -62,8 +62,9 @@ namespace Infrastructure.Data.Migrations
                     b.Property<string>("Categoria")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Comprobante")
-                        .HasColumnType("longtext");
+                    b.Property<string>("ComprobanteKey")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
