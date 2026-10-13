@@ -38,6 +38,7 @@ namespace Infrastructure.Data
             modelBuilder.Entity<Viaje>(viaje =>
             {
                 viaje.Property(v => v.PortadaKey).HasMaxLength(300);
+                viaje.Property(v => v.Estado).HasMaxLength(20);
             });
 
             // Key de S3 del comprobante ("comprobantes/<guid>.pdf"), en un bucket privado.

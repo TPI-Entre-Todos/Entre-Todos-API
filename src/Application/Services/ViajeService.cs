@@ -33,8 +33,10 @@ namespace Application.Services
 
             var viaje = new Viaje(
                 request.Nombre!.Trim(),
-                request.Descripcion!.Trim(),
-                request.Moneda!.Trim()
+                (request.Descripcion ?? string.Empty).Trim(),
+                request.Moneda!.Trim(),
+                request.FechaInicio,
+                request.FechaFin
             );
 
             _viajeRepository.Add(viaje);
@@ -84,6 +86,32 @@ namespace Application.Services
                 if (participante == null)
                     throw new Domain.Exceptions.UnauthorizedAccessException("No pertenecés a este viaje.");
             }
+
+            return ViajeDto.Create(viaje, ObtenerUrlPortada(viaje));
+        }
+
+        public ViajeDto Finalizar(int id, int usuarioAutenticadoId, bool esAdmin)
+        {
+            if (id <= 0)
+                throw new BadRequestException("Id de viaje inválido.");
+
+            var viaje = _viajeRepository.GetById(id);
+            if (viaje == null)
+                throw new NotFoundException("Viaje no encontrado.");
+
+            if (!esAdmin)
+            {
+                var participante = _participanteViajeRepository.GetByIds(usuarioAutenticadoId, id);
+                if (participante == null || !participante.EsOrganizador)
+                    throw new Domain.Exceptions.UnauthorizedAccessException(
+                        "Sólo el organizador del viaje puede finalizarlo.");
+            }
+
+            if (viaje.Estado == "Finalizado")
+                throw new BadRequestException("El viaje ya está finalizado.");
+
+            viaje.Estado = "Finalizado";
+            _viajeRepository.Update(viaje);
 
             return ViajeDto.Create(viaje, ObtenerUrlPortada(viaje));
         }
@@ -203,11 +231,11 @@ namespace Application.Services
             if (string.IsNullOrWhiteSpace(request.Nombre))
                 throw new BadRequestException("El nombre del viaje es obligatorio.");
 
-            if (string.IsNullOrWhiteSpace(request.Descripcion))
-                throw new BadRequestException("La descripción del viaje es obligatoria.");
-
             if (string.IsNullOrWhiteSpace(request.Moneda))
                 throw new BadRequestException("La moneda del viaje es obligatoria.");
+
+            if (request.FechaInicio.HasValue && request.FechaFin.HasValue && request.FechaFin < request.FechaInicio)
+                throw new BadRequestException("La fecha de fin no puede ser anterior a la de inicio.");
         }
     }
 }

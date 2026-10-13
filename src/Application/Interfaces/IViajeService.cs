@@ -9,6 +9,11 @@ namespace Application.Interfaces
         List<ViajeDto> Get(int userId, bool esAdmin);
         ViajeDto? GetById(int id, int userId, bool esAdmin);
 
+        /// <summary>
+        /// Marca el viaje como finalizado. Sólo puede hacerlo el organizador o un Admin.
+        /// </summary>
+        ViajeDto Finalizar(int id, int usuarioAutenticadoId, bool esAdmin);
+
         Task DeleteAsync(int id, int usuarioAutenticadoId, bool esAdmin, CancellationToken cancellationToken = default);
 
         /// <summary>

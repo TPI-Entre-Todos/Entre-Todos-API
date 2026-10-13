@@ -91,13 +91,17 @@ namespace Application.Services
             if (participante.EsOrganizador == esOrganizador)
                 throw new BadRequestException($"El participante ya tiene asignado el estado de organizador: {esOrganizador}.");
 
+            // Un viaje siempre debe tener al menos un organizador.
+            if (!esOrganizador && EsElUnicoOrganizador(participante))
+                throw new BadRequestException(MensajeUnicoOrganizador);
+
             participante.EsOrganizador = esOrganizador;
             var actualizado = _repository.Update(participante);
             return ParticipanteViajeDto.Create(actualizado);
         }
 
         // 4. BAJA: Eliminar participante
-        public void EliminarParticipante(int id)
+        public void EliminarParticipante(int id, int usuarioAutenticadoId, bool esAdmin)
         {
             if (id <= 0)
                 throw new BadRequestException("Id de participante inválido.");
@@ -106,10 +110,35 @@ namespace Application.Services
             if (participante == null)
                 throw new NotFoundException("Participante no encontrado.");
 
+            // Puede dar de baja un Admin, un organizador de ese viaje, o el propio
+            // participante (salir del viaje).
+            if (!esAdmin && participante.UsuarioId != usuarioAutenticadoId)
+            {
+                var solicitante = _repository.GetByIds(usuarioAutenticadoId, participante.ViajeId);
+                if (solicitante == null || !solicitante.EsOrganizador)
+                    throw new Domain.Exceptions.UnauthorizedAccessException(
+                        "Sólo el organizador del viaje puede quitar participantes.");
+            }
+
+            if (EsElUnicoOrganizador(participante))
+                throw new BadRequestException(MensajeUnicoOrganizador);
+
             if (participante.SaldoTotal != 0)
                 throw new BadRequestException("No se puede eliminar un participante con saldos pendientes.");
 
             _repository.Delete(id);
+        }
+
+        private const string MensajeUnicoOrganizador =
+            "Sos el único organizador del viaje. Asigná a otro participante como organizador antes de salir o dejar de serlo.";
+
+        private bool EsElUnicoOrganizador(ParticipanteViaje participante)
+        {
+            if (!participante.EsOrganizador)
+                return false;
+
+            return !_repository.GetByViajeId(participante.ViajeId)
+                .Any(p => p.Id != participante.Id && p.EsOrganizador);
         }
 
         private static void ValidarSolicitud(ParticipanteViajeCreateRequest dto)

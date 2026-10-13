@@ -9,6 +9,9 @@ public class ViajeDto
     public string? Descripcion { get; set; }
     public string? Moneda { get; set; }
     public string? PortadaUrl { get; set; }
+    public DateTime? FechaInicio { get; set; }
+    public DateTime? FechaFin { get; set; }
+    public string Estado { get; set; } = "Activo";
 
     public DateTime FechaCreacion { get; set; }
 
@@ -23,6 +26,9 @@ public class ViajeDto
             Descripcion = viaje.Descripcion,
             Moneda = viaje.Moneda,
             PortadaUrl = portadaUrl,
+            FechaInicio = viaje.FechaInicio,
+            FechaFin = viaje.FechaFin,
+            Estado = viaje.Estado,
             FechaCreacion = viaje.FechaCreacion
         };
     }
