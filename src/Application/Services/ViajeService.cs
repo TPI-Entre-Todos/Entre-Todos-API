@@ -110,7 +110,39 @@ namespace Application.Services
             if (viaje.Estado == "Finalizado")
                 throw new BadRequestException("El viaje ya está finalizado.");
 
+            // No se puede cerrar un viaje con deudas sin saldar.
+            var haySaldosPendientes = _participanteViajeRepository.GetByViajeId(id)
+                .Any(p => Math.Abs(p.SaldoTotal) >= 0.01m);
+            if (haySaldosPendientes)
+                throw new BadRequestException("No se puede finalizar el viaje: hay saldos pendientes.");
+
             viaje.Estado = "Finalizado";
+            _viajeRepository.Update(viaje);
+
+            return ViajeDto.Create(viaje, ObtenerUrlPortada(viaje));
+        }
+
+        public ViajeDto Reabrir(int id, int usuarioAutenticadoId, bool esAdmin)
+        {
+            if (id <= 0)
+                throw new BadRequestException("Id de viaje inválido.");
+
+            var viaje = _viajeRepository.GetById(id);
+            if (viaje == null)
+                throw new NotFoundException("Viaje no encontrado.");
+
+            if (!esAdmin)
+            {
+                var participante = _participanteViajeRepository.GetByIds(usuarioAutenticadoId, id);
+                if (participante == null || !participante.EsOrganizador)
+                    throw new Domain.Exceptions.UnauthorizedAccessException(
+                        "Sólo el organizador del viaje puede reabrirlo.");
+            }
+
+            if (viaje.Estado != "Finalizado")
+                throw new BadRequestException("El viaje ya está activo.");
+
+            viaje.Estado = "Activo";
             _viajeRepository.Update(viaje);
 
             return ViajeDto.Create(viaje, ObtenerUrlPortada(viaje));

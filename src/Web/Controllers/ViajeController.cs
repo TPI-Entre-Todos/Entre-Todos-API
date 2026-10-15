@@ -69,6 +69,13 @@ namespace Web.Controllers
             return Ok(_viajeService.Finalizar(id, usuarioId, esAdmin));
         }
 
+        [HttpPatch("{id:int}/reabrir")]
+        public IActionResult Reabrir([FromRoute] int id)
+        {
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            return Ok(_viajeService.Reabrir(id, usuarioId, esAdmin));
+        }
+
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
         {

@@ -36,6 +36,7 @@ namespace Application.Services
         {
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.ParticipantesIds);
@@ -53,6 +54,7 @@ namespace Application.Services
         {
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
@@ -72,6 +74,7 @@ namespace Application.Services
         {
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
@@ -134,6 +137,7 @@ namespace Application.Services
                 ?? throw new NotFoundException("El gasto no existe.");
 
             ValidarPermisoModificacion(gasto, userId, esAdmin);
+            AsegurarViajeActivo(gasto.ViajeId);
 
             var extension = ValidadorImagen.ValidarComprobanteYObtenerExtension(
                 contenido, tamanio, TamanioMaximoComprobanteBytes);
@@ -171,6 +175,7 @@ namespace Application.Services
 
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.ParticipantesIds);
@@ -191,6 +196,7 @@ namespace Application.Services
 
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
@@ -213,6 +219,7 @@ namespace Application.Services
 
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
@@ -236,6 +243,7 @@ namespace Application.Services
                 ?? throw new NotFoundException("El gasto no existe.");
 
             ValidarPermisoModificacion(gasto, userId, esAdmin);
+            AsegurarViajeActivo(gasto.ViajeId);
             var comprobanteKey = gasto.ComprobanteKey;
             _gastoRepository.DeleteWithSaldoReversal(id);
 
@@ -243,6 +251,14 @@ namespace Application.Services
             {
                 try { _fileStorage.EliminarPorKeyAsync(comprobanteKey, ContenedorComprobantes).GetAwaiter().GetResult(); } catch { }
             }
+        }
+
+        // Un viaje finalizado es de solo lectura: no admite altas ni cambios de gastos.
+        private void AsegurarViajeActivo(int viajeId)
+        {
+            var viaje = _viajeRepository.GetById(viajeId);
+            if (viaje != null && viaje.Estado == "Finalizado")
+                throw new BadRequestException("El viaje está finalizado. Reabrilo para registrar o modificar gastos.");
         }
 
         // ─── Helpers de cálculo ───────────────────────────────────────────────────

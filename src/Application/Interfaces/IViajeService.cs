@@ -14,6 +14,11 @@ namespace Application.Interfaces
         /// </summary>
         ViajeDto Finalizar(int id, int usuarioAutenticadoId, bool esAdmin);
 
+        /// <summary>
+        /// Vuelve a dejar activo un viaje finalizado. Sólo puede hacerlo el organizador o un Admin.
+        /// </summary>
+        ViajeDto Reabrir(int id, int usuarioAutenticadoId, bool esAdmin);
+
         Task DeleteAsync(int id, int usuarioAutenticadoId, bool esAdmin, CancellationToken cancellationToken = default);
 
         /// <summary>
