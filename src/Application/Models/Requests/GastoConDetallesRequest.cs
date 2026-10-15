@@ -11,7 +11,6 @@ namespace Application.Models.Requests
         public DateTime? Fecha { get; set; }
         public TipoDivision TipoDivision { get; set; } = TipoDivision.Igualitario;
         public string? Categoria { get; set; }
-        public string? Comprobante { get; set; }
         public List<DetalleGastoItemRequest> Detalles { get; set; } = [];
     }
 }

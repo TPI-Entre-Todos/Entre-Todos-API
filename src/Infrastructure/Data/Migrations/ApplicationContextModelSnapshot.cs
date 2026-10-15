@@ -62,8 +62,9 @@ namespace Infrastructure.Data.Migrations
                     b.Property<string>("Categoria")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Comprobante")
-                        .HasColumnType("longtext");
+                    b.Property<string>("ComprobanteKey")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
@@ -250,6 +251,14 @@ namespace Infrastructure.Data.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("CognitoSub")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -261,27 +270,15 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
                     b.Property<int>("Rol")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Usuarios");
+                    b.HasIndex("CognitoSub")
+                        .IsUnique();
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Email = "admin@entretodos.com",
-                            FechaRegistro = new DateTime(2026, 6, 15, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Nombre = "Admin",
-                            Password = "Admin123!",
-                            Rol = 1
-                        });
+                    b.ToTable("Usuarios");
                 });
 
             modelBuilder.Entity("Domain.Entities.Viaje", b =>
@@ -296,7 +293,18 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
                     b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaFin")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaInicio")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Moneda")
@@ -306,6 +314,10 @@ namespace Infrastructure.Data.Migrations
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<string>("PortadaKey")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
 
                     b.HasKey("Id");
 
