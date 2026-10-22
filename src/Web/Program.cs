@@ -39,7 +39,13 @@ builder.Services.AddScoped<IViajeService, ViajeService>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IInvitacionRepository, InvitacionRepository>();
-builder.Services.AddScoped<IInvitacionService, InvitacionService>();
+builder.Services.AddScoped<IInvitacionService>(sp => new InvitacionService(
+    sp.GetRequiredService<IInvitacionRepository>(),
+    sp.GetRequiredService<IEmailService>(),
+    sp.GetRequiredService<IParticipanteViajeRepository>(),
+    sp.GetRequiredService<IViajeRepository>(),
+    sp.GetRequiredService<IUsuarioRepository>(),
+    builder.Configuration["Frontend:BaseUrl"] ?? "http://localhost:5173"));
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IParticipanteViajeRepository, ParticipanteViajeRepository>();
 builder.Services.AddScoped<IParticipanteViajeService, ParticipanteViajeService>();
