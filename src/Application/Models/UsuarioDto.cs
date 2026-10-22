@@ -9,6 +9,7 @@ public class UsuarioDto
     public string? Nombre { get; set; }
     public string? Email { get; set; }
     public Rol Rol { get; set; }
+    public string? AvatarUrl { get; set; }
     public DateTime FechaRegistro { get; set; }
 
     public static UsuarioDto Create(Usuario usuario)
@@ -18,6 +19,7 @@ public class UsuarioDto
         dto.Nombre = usuario.Nombre;
         dto.Email = usuario.Email;
         dto.Rol = usuario.Rol;
+        dto.AvatarUrl = usuario.AvatarUrl;
         dto.FechaRegistro = usuario.FechaRegistro;
         return dto;
     }

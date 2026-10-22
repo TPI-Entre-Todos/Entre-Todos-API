@@ -3,6 +3,7 @@ using Application.Models.Requests;
 using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 namespace Web.Controllers
 {
     [ApiController]
@@ -18,12 +19,13 @@ namespace Web.Controllers
             _usuarioService = usuarioService;
         }
 
-        [AllowAnonymous]
-        [HttpPost]
-        public IActionResult Add(UsuarioRequest request)
+        // El alta de usuarios la hace Cognito. Acá sólo se devuelve el perfil local,
+        // que se crea automáticamente la primera vez que llega un token válido.
+        [HttpGet("me")]
+        public IActionResult GetMe()
         {
-            var result = _usuarioService.Add(request);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            var usuario = _usuarioService.GetOrCreateFromToken(User);
+            return Ok(usuario);
         }
 
         [HttpGet]
@@ -45,8 +47,27 @@ namespace Web.Controllers
         [HttpPut("{id:int}")]
         public IActionResult Update(int id, UsuarioRequest request)
         {
-            var updated = _usuarioService.Update(id, request);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            var updated = _usuarioService.Update(id, request, usuarioId, esAdmin);
             return Ok(updated);
+        }
+
+        // El archivo llega como multipart/form-data en el campo "archivo".
+        [HttpPost("{id:int}/avatar")]
+        [RequestSizeLimit(3 * 1024 * 1024)]
+        public async Task<IActionResult> SubirAvatar(int id, IFormFile archivo, CancellationToken cancellationToken)
+        {
+            if (archivo == null || archivo.Length == 0)
+                return BadRequest("No se recibió ningún archivo.");
+
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+
+            using var contenido = archivo.OpenReadStream();
+
+            var actualizado = await _usuarioService.ActualizarAvatarAsync(
+                id, contenido, archivo.Length, usuarioId, esAdmin, cancellationToken);
+
+            return Ok(actualizado);
         }
 
         [HttpPatch("{id:int}/rol")]
@@ -60,8 +81,16 @@ namespace Web.Controllers
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
-            _usuarioService.Delete(id);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            _usuarioService.Delete(id, usuarioId, esAdmin);
             return NoContent();
+        }
+
+        private (int usuarioId, bool esAdmin) ObtenerIdentidad()
+        {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.IsInRole("Admin");
+            return (usuarioId, esAdmin);
         }
 
     }

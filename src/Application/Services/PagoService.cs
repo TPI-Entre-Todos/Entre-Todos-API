@@ -60,8 +60,7 @@ namespace Application.Services
             if (request.DetalleGastoId <= 0)
                 throw new BadRequestException("DetalleGastoId debe ser válido");
 
-            if (_viajeRepository.GetById(request.ViajeId) == null)
-                throw new NotFoundException("Viaje no encontrado");
+            ObtenerViajeActivo(request.ViajeId);
 
             var remitente = _participanteRepository.GetById(request.ParticipanteId)
                 ?? throw new NotFoundException("Participante remitente no encontrado");
@@ -100,8 +99,7 @@ namespace Application.Services
 
             ValidarMontoDetalles(request.DetallesPagados, request.Monto!.Value);
 
-            if (_viajeRepository.GetById(request.ViajeId) == null)
-                throw new NotFoundException("Viaje no encontrado");
+            ObtenerViajeActivo(request.ViajeId);
 
             var remitente = _participanteRepository.GetById(request.ParticipanteId)
                 ?? throw new NotFoundException("Participante remitente no encontrado");
@@ -175,8 +173,7 @@ namespace Application.Services
             if (request.DetalleGastoId <= 0)
                 throw new BadRequestException("DetalleGastoId debe ser válido");
 
-            if (_viajeRepository.GetById(request.ViajeId) == null)
-                throw new NotFoundException("Viaje no encontrado");
+            ObtenerViajeActivo(request.ViajeId);
 
             var existing = _pagoRepository.GetById(id)
                 ?? throw new NotFoundException("Pago no encontrado");
@@ -214,8 +211,7 @@ namespace Application.Services
 
             ValidarMontoDetalles(request.DetallesPagados, request.Monto!.Value);
 
-            if (_viajeRepository.GetById(request.ViajeId) == null)
-                throw new NotFoundException("Viaje no encontrado");
+            ObtenerViajeActivo(request.ViajeId);
 
             var existing = _pagoRepository.GetById(id)
                 ?? throw new NotFoundException("Pago no encontrado");
@@ -279,6 +275,8 @@ namespace Application.Services
             var pago = _pagoRepository.GetById(id)
                 ?? throw new NotFoundException("Pago no encontrado");
 
+            ObtenerViajeActivo(pago.ViajeId);
+
             if (pago.DetallesPagados.Count > 0)
             {
                 var destinatario = _participanteRepository.GetById(pago.DestinatarioId)
@@ -288,6 +286,16 @@ namespace Application.Services
             }
 
             _pagoRepository.Delete(id);
+        }
+
+        // Un viaje finalizado es de solo lectura: no admite altas ni cambios de pagos.
+        private void ObtenerViajeActivo(int viajeId)
+        {
+            var viaje = _viajeRepository.GetById(viajeId)
+                ?? throw new NotFoundException("Viaje no encontrado");
+
+            if (viaje.Estado == "Finalizado")
+                throw new BadRequestException("El viaje está finalizado. Reabrilo para registrar o modificar pagos.");
         }
 
         public List<PagoDto> GetByViajeId(int viajeId)
