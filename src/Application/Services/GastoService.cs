@@ -15,9 +15,15 @@ namespace Application.Services
         private readonly INotificacionRepository _notificacionRepository;
         private readonly IViajeRepository _viajeRepository;
         private readonly IUsuarioRepository _usuarioRepository;
+        private readonly IFileStorageService _fileStorage;
 
-        public GastoService(IGastoRepository gastoRepository, IParticipanteViajeRepository participanteViajeRepository, INotificacionRepository notificacionRepository, IViajeRepository viajeRepository, IUsuarioRepository usuarioRepository)
+        private const string ContenedorComprobantes = "comprobantes";
+        private const long TamanioMaximoComprobanteBytes = 5 * 1024 * 1024; // 5 MB
+        private static readonly TimeSpan VigenciaUrlComprobante = TimeSpan.FromMinutes(15);
+
+        public GastoService(IGastoRepository gastoRepository, IParticipanteViajeRepository participanteViajeRepository, INotificacionRepository notificacionRepository, IViajeRepository viajeRepository, IUsuarioRepository usuarioRepository, IFileStorageService fileStorage)
         {
+            _fileStorage = fileStorage;
             _gastoRepository = gastoRepository;
             _participanteViajeRepository = participanteViajeRepository;
             _notificacionRepository = notificacionRepository;
@@ -30,6 +36,7 @@ namespace Application.Services
         {
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.ParticipantesIds);
@@ -40,13 +47,14 @@ namespace Application.Services
 
             var montosCalculados = CalcularIgualitario(dto.Monto, dto.ParticipantesIds);
             return PersistirGasto(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Igualitario, montosCalculados);
+                dto.Fecha, dto.Categoria, TipoDivision.Igualitario, montosCalculados);
         }
 
         public GastoDto CrearPorPorcentaje(GastoPorPorcentajeRequest dto, int userId, bool esAdmin)
         {
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
@@ -59,13 +67,14 @@ namespace Application.Services
 
             var montosCalculados = CalcularPorPorcentaje(dto.Monto, dto.Participantes);
             return PersistirGasto(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.PorPorcentaje, montosCalculados);
+                dto.Fecha, dto.Categoria, TipoDivision.PorPorcentaje, montosCalculados);
         }
 
         public GastoDto CrearPersonalizado(GastoPersonalizadoRequest dto, int userId, bool esAdmin)
         {
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
@@ -78,7 +87,7 @@ namespace Application.Services
 
             var montosCalculados = dto.Participantes.ToDictionary(p => p.ParticipanteId, p => p.Monto);
             return PersistirGasto(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Personalizado, montosCalculados);
+                dto.Fecha, dto.Categoria, TipoDivision.Personalizado, montosCalculados);
         }
 
         // ─── Consulta ─────────────────────────────────────────────────────────────
@@ -96,13 +105,13 @@ namespace Application.Services
                 gastos = gastos.Where(g => viajesDelUsuario.Contains(g.ViajeId)).ToList();
             }
 
-            return GastoDto.CreateList(gastos);
+            return GastoDto.CreateList(gastos, ObtenerUrlComprobante);
         }
 
         public List<GastoDto> ObtenerGastosPorViaje(int viajeId, int userId, bool esAdmin)
         {
             ValidarParticipanteDelViaje(viajeId, userId, esAdmin);
-            return GastoDto.CreateList(_gastoRepository.GetByViajeId(viajeId));
+            return GastoDto.CreateList(_gastoRepository.GetByViajeId(viajeId), ObtenerUrlComprobante);
         }
 
         public GastoDto? ObtenerGastoPorId(int id, int userId, bool esAdmin)
@@ -111,7 +120,51 @@ namespace Application.Services
             if (gasto == null) return null;
 
             ValidarParticipanteDelViaje(gasto.ViajeId, userId, esAdmin);
-            return GastoDto.Create(gasto);
+            return GastoDto.Create(gasto, ObtenerUrlComprobante(gasto));
+        }
+
+        private string? ObtenerUrlComprobante(Gasto gasto) =>
+            string.IsNullOrEmpty(gasto.ComprobanteKey)
+                ? null
+                : _fileStorage.ObtenerUrlFirmada(gasto.ComprobanteKey, ContenedorComprobantes, VigenciaUrlComprobante);
+
+        // ─── Comprobante ──────────────────────────────────────────────────────────
+
+        public async Task<GastoDto> SubirComprobanteAsync(
+            int id, Stream contenido, long tamanio, int userId, bool esAdmin, CancellationToken ct = default)
+        {
+            var gasto = _gastoRepository.GetById(id)
+                ?? throw new NotFoundException("El gasto no existe.");
+
+            ValidarPermisoModificacion(gasto, userId, esAdmin);
+            AsegurarViajeActivo(gasto.ViajeId);
+
+            var extension = ValidadorImagen.ValidarComprobanteYObtenerExtension(
+                contenido, tamanio, TamanioMaximoComprobanteBytes);
+
+            var keyAnterior = gasto.ComprobanteKey;
+            var nuevaKey = await _fileStorage.SubirPrivadoAsync(
+                contenido, $"{Guid.NewGuid():N}{extension}",
+                ValidadorImagen.ContentTypePara(extension), ContenedorComprobantes, ct);
+
+            try
+            {
+                gasto.ComprobanteKey = nuevaKey;
+                _gastoRepository.Update(gasto);
+            }
+            catch
+            {
+                // La base no quedó actualizada: se descarta el archivo recién subido.
+                try { await _fileStorage.EliminarPorKeyAsync(nuevaKey, ContenedorComprobantes, CancellationToken.None); } catch { }
+                throw;
+            }
+
+            if (!string.IsNullOrEmpty(keyAnterior))
+            {
+                try { await _fileStorage.EliminarPorKeyAsync(keyAnterior, ContenedorComprobantes, ct); } catch { }
+            }
+
+            return GastoDto.Create(gasto, ObtenerUrlComprobante(gasto));
         }
 
         // ─── Actualización ────────────────────────────────────────────────────────
@@ -122,6 +175,7 @@ namespace Application.Services
 
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.ParticipantesIds);
@@ -132,7 +186,7 @@ namespace Application.Services
 
             var montosCalculados = CalcularIgualitario(dto.Monto, dto.ParticipantesIds);
             return PersistirActualizacion(gastoExistente, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Igualitario, montosCalculados);
+                dto.Fecha, dto.Categoria, TipoDivision.Igualitario, montosCalculados);
         }
 
         public GastoDto ActualizarPorPorcentaje(int id, GastoPorPorcentajeRequest dto, int userId, bool esAdmin)
@@ -142,6 +196,7 @@ namespace Application.Services
 
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
@@ -154,7 +209,7 @@ namespace Application.Services
 
             var montosCalculados = CalcularPorPorcentaje(dto.Monto, dto.Participantes);
             return PersistirActualizacion(gastoExistente, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.PorPorcentaje, montosCalculados);
+                dto.Fecha, dto.Categoria, TipoDivision.PorPorcentaje, montosCalculados);
         }
 
         public GastoDto ActualizarPersonalizado(int id, GastoPersonalizadoRequest dto, int userId, bool esAdmin)
@@ -164,6 +219,7 @@ namespace Application.Services
 
             var participantePagador = ValidarYObtenerParticipante(dto.ParticipanteId, userId, esAdmin);
             var viajeId = participantePagador.ViajeId;
+            AsegurarViajeActivo(viajeId);
 
             ValidarCabecera(viajeId, dto.ParticipanteId, dto.Descripcion, dto.Monto);
             ValidarListaNoVacia(dto.Participantes);
@@ -176,7 +232,7 @@ namespace Application.Services
 
             var montosCalculados = dto.Participantes.ToDictionary(p => p.ParticipanteId, p => p.Monto);
             return PersistirActualizacion(gastoExistente, dto.ParticipanteId, dto.Descripcion, dto.Monto,
-                dto.Fecha, dto.Categoria, dto.Comprobante, TipoDivision.Personalizado, montosCalculados);
+                dto.Fecha, dto.Categoria, TipoDivision.Personalizado, montosCalculados);
         }
 
         // ─── Baja ─────────────────────────────────────────────────────────────────
@@ -187,7 +243,40 @@ namespace Application.Services
                 ?? throw new NotFoundException("El gasto no existe.");
 
             ValidarPermisoModificacion(gasto, userId, esAdmin);
+            AsegurarViajeActivo(gasto.ViajeId);
+
+            // Borrar un gasto con pagos haría desaparecer plata que se transfirió de verdad.
+            if (TieneDeudasPagadas(gasto))
+                throw new BadRequestException(
+                    "Este gasto ya tiene pagos registrados. Eliminá primero esos pagos para poder borrarlo.");
+
+            var comprobanteKey = gasto.ComprobanteKey;
             _gastoRepository.DeleteWithSaldoReversal(id);
+
+            if (!string.IsNullOrEmpty(comprobanteKey))
+            {
+                try { _fileStorage.EliminarPorKeyAsync(comprobanteKey, ContenedorComprobantes).GetAwaiter().GetResult(); } catch { }
+            }
+        }
+
+        // El detalle de quien pagó el gasto nace saldado consigo mismo; solo cuentan los pagos de los demás.
+        private static bool TieneDeudasPagadas(Gasto gasto) =>
+            gasto.DetallesGasto.Any(d => d.ParticipanteId != gasto.ParticipanteId && d.MontoPagado > 0);
+
+        private static bool RepartoSinCambios(
+            Gasto gasto, int nuevoPagadorId, decimal monto, Dictionary<int, decimal> montosNuevos) =>
+            nuevoPagadorId == gasto.ParticipanteId
+            && monto == gasto.Monto
+            && montosNuevos.Count == gasto.DetallesGasto.Count
+            && gasto.DetallesGasto.All(d =>
+                montosNuevos.TryGetValue(d.ParticipanteId, out var montoNuevo) && montoNuevo == d.MontoDebe);
+
+        // Un viaje finalizado es de solo lectura: no admite altas ni cambios de gastos.
+        private void AsegurarViajeActivo(int viajeId)
+        {
+            var viaje = _viajeRepository.GetById(viajeId);
+            if (viaje != null && viaje.Estado == "Finalizado")
+                throw new BadRequestException("El viaje está finalizado. Reabrilo para registrar o modificar gastos.");
         }
 
         // ─── Helpers de cálculo ───────────────────────────────────────────────────
@@ -246,7 +335,7 @@ namespace Application.Services
 
         private GastoDto PersistirActualizacion(
             Gasto gastoExistente, int nuevoPagadorId, string descripcion, decimal monto,
-            DateTime? fecha, string? categoria, string? comprobante,
+            DateTime? fecha, string? categoria,
             TipoDivision tipoDivision, Dictionary<int, decimal> montosNuevos)
         {
             var pagador = _participanteViajeRepository.GetById(nuevoPagadorId)
@@ -254,6 +343,25 @@ namespace Application.Services
 
             if (pagador.ViajeId != gastoExistente.ViajeId)
                 throw new BadRequestException("El participante que pagó no pertenece a este viaje.");
+
+            // Con pagos hechos, el monto, quién pagó y el reparto quedan fijos: rehacer los detalles
+            // pondría en cero lo ya pagado mientras los pagos y los saldos lo siguen contando.
+            if (TieneDeudasPagadas(gastoExistente))
+            {
+                if (!RepartoSinCambios(gastoExistente, nuevoPagadorId, monto, montosNuevos))
+                    throw new BadRequestException(
+                        "Este gasto ya tiene pagos registrados: no se puede cambiar el monto, quién pagó ni el reparto. " +
+                        "Eliminá primero esos pagos.");
+
+                gastoExistente.Descripcion = descripcion;
+                gastoExistente.Categoria = categoria;
+                gastoExistente.TipoDivision = tipoDivision;
+                if (fecha.HasValue) gastoExistente.Fecha = fecha.Value;
+
+                var gastoEditado = _gastoRepository.UpdateWithDetalles(gastoExistente, new Dictionary<int, decimal>());
+                CrearNotificacionesActualizacionGasto(gastoEditado);
+                return GastoDto.Create(gastoEditado, ObtenerUrlComprobante(gastoEditado));
+            }
 
             // Revertir el saldo del gasto anterior
             var saldoReversal = CalcularCambiosSaldo(
@@ -279,7 +387,6 @@ namespace Application.Services
             gastoExistente.Monto = monto;
             gastoExistente.TipoDivision = tipoDivision;
             gastoExistente.Categoria = categoria;
-            gastoExistente.Comprobante = comprobante;
             if (fecha.HasValue) gastoExistente.Fecha = fecha.Value;
 
             // Obtener DetallesGasto actuales indexados por ParticipanteId
@@ -315,7 +422,7 @@ namespace Application.Services
 
             CrearNotificacionesActualizacionGasto(gastoActualizado);
 
-            return GastoDto.Create(gastoActualizado);
+            return GastoDto.Create(gastoActualizado, ObtenerUrlComprobante(gastoActualizado));
         }
 
         private Gasto ObtenerGastoValidado(int id)
@@ -326,7 +433,7 @@ namespace Application.Services
 
         private GastoDto PersistirGasto(
             int viajeId, int pagadorId, string descripcion, decimal monto,
-            DateTime? fecha, string? categoria, string? comprobante,
+            DateTime? fecha, string? categoria,
             TipoDivision tipoDivision, Dictionary<int, decimal> montosCalculados)
         {
             var pagador = _participanteViajeRepository.GetById(pagadorId)
@@ -335,7 +442,7 @@ namespace Application.Services
             if (pagador.ViajeId != viajeId)
                 throw new BadRequestException("El participante que pagó no pertenece a este viaje.");
 
-            var gasto = new Gasto(viajeId, pagadorId, descripcion, monto, tipoDivision, categoria, comprobante);
+            var gasto = new Gasto(viajeId, pagadorId, descripcion, monto, tipoDivision, categoria);
             if (fecha.HasValue) gasto.Fecha = fecha.Value;
 
             foreach (var (participanteId, montoDebe) in montosCalculados)
@@ -349,7 +456,7 @@ namespace Application.Services
 
             CrearNotificacionesGasto(gastoCreado);
 
-            return GastoDto.Create(gastoCreado);
+            return GastoDto.Create(gastoCreado, ObtenerUrlComprobante(gastoCreado));
         }
 
         // ─── Autorización ─────────────────────────────────────────────────────────

@@ -42,7 +42,7 @@ namespace Web.Controllers
 
         // GET: api/ParticipanteViaje/viaje/Admin/5 (Listar los de un viaje como admin)
         [Authorize(Roles = "Admin")]
-        [HttpGet("viaje/Admin{viajeId:int}")]
+        [HttpGet("viaje/Admin/{viajeId:int}")]
         public IActionResult GetPorViajeAdmin(int viajeId)
         {
             var participantes = _participanteViajeService.ObtenerPorViajeAdmin(viajeId);
@@ -72,8 +72,8 @@ namespace Web.Controllers
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
-
-            _participanteViajeService.EliminarParticipante(id);
+            int userIdClaim = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            _participanteViajeService.EliminarParticipante(id, userIdClaim, User.IsInRole("Admin"));
             return NoContent();
         }
 
