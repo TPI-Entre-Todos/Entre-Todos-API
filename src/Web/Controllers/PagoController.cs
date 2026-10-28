@@ -2,6 +2,7 @@ using Application.Interfaces;
 using Application.Models.Requests;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Web.Controllers
 {
@@ -69,7 +70,9 @@ namespace Web.Controllers
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
-            _pagoService.Delete(id);
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            bool esAdmin = User.IsInRole("Admin");
+            _pagoService.Delete(id, usuarioId, esAdmin);
             return NoContent();
         }
 

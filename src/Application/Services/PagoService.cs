@@ -80,9 +80,11 @@ namespace Application.Services
 
             var detalles = ActualizarDetallesGasto(
                 [new PagoDetalleGastoItem { DetalleGastoId = request.DetalleGastoId, Monto = request.Monto!.Value }],
+                remitente,
                 destinatario,
                 request.ViajeId
             );
+            pago.GrupoPagoId = request.GrupoPagoId;
             pago.DetallesPagados = detalles;
 
             _pagoRepository.Add(pago);
@@ -117,7 +119,8 @@ namespace Application.Services
                 request.Comprobante
             );
 
-            var detalles = ActualizarDetallesGasto(request.DetallesPagados, destinatario, request.ViajeId);
+            var detalles = ActualizarDetallesGasto(request.DetallesPagados, remitente, destinatario, request.ViajeId);
+            pago.GrupoPagoId = request.GrupoPagoId;
             pago.DetallesPagados = detalles;
 
             _pagoRepository.Add(pago);
@@ -126,9 +129,10 @@ namespace Application.Services
             return PagoDto.Create(pago);
         }
 
-        private List<DetalleGasto> ActualizarDetallesGasto(List<PagoDetalleGastoItem> detallesPagados, ParticipanteViaje destinatario, int viajeId)
+        // El remitente es quien debe (dueño del detalle) y el destinatario quien pagó el gasto.
+        private List<PagoDetalle> ActualizarDetallesGasto(List<PagoDetalleGastoItem> detallesPagados, ParticipanteViaje remitente, ParticipanteViaje destinatario, int viajeId)
         {
-            var detallesEntidades = new List<DetalleGasto>();
+            var detallesEntidades = new List<PagoDetalle>();
 
             foreach (var detalle in detallesPagados)
             {
@@ -144,8 +148,11 @@ namespace Application.Services
                 if (gastoDelDetalle.ViajeId != viajeId)
                     throw new BadRequestException($"El DetalleGasto {detalle.DetalleGastoId} no pertenece al viaje indicado");
 
-                if (detalleGasto.ParticipanteId != destinatario.Id)
-                    throw new BadRequestException($"El DetalleGasto {detalle.DetalleGastoId} no corresponde al destinatario del pago");
+                if (detalleGasto.ParticipanteId != remitente.Id)
+                    throw new BadRequestException($"El DetalleGasto {detalle.DetalleGastoId} no corresponde al remitente del pago");
+
+                if (gastoDelDetalle.ParticipanteId != destinatario.Id)
+                    throw new BadRequestException($"El gasto del DetalleGasto {detalle.DetalleGastoId} no fue pagado por el destinatario");
 
                 if (detalle.Monto > detalleGasto.SaldoPendiente)
                     throw new BadRequestException(
@@ -154,15 +161,12 @@ namespace Application.Services
                 detalleGasto.MontoPagado += detalle.Monto;
                 _detalleGastoRepository.Update(detalleGasto);
 
-                var participanteDeudor = _participanteRepository.GetById(detalleGasto.ParticipanteId)
-                    ?? throw new NotFoundException($"Participante {detalleGasto.ParticipanteId} no encontrado");
-                participanteDeudor.SaldoTotal += detalle.Monto;
-                _participanteRepository.Update(participanteDeudor);
-
+                remitente.SaldoTotal += detalle.Monto;
                 destinatario.SaldoTotal -= detalle.Monto;
-                detallesEntidades.Add(detalleGasto);
+                detallesEntidades.Add(new PagoDetalle(detalleGasto.Id, detalle.Monto) { DetalleGasto = detalleGasto });
             }
 
+            _participanteRepository.Update(remitente);
             _participanteRepository.Update(destinatario);
             return detallesEntidades;
         }
@@ -194,10 +198,11 @@ namespace Application.Services
 
             var detalles = ActualizarDetallesGasto(
                 [new PagoDetalleGastoItem { DetalleGastoId = request.DetalleGastoId, Monto = request.Monto!.Value }],
+                remitente,
                 destinatarioNuevo,
                 request.ViajeId
             );
-            existing.DetallesPagados = detalles;
+            ReemplazarDetalles(existing, detalles);
 
             EnviarNotificacion(remitente, destinatarioNuevo, existing);
             return PagoDto.Create(_pagoRepository.Update(existing));
@@ -230,8 +235,8 @@ namespace Application.Services
 
             ActualizarCamposPago(existing, request);
 
-            var detalles = ActualizarDetallesGasto(request.DetallesPagados, destinatarioNuevo, request.ViajeId);
-            existing.DetallesPagados = detalles;
+            var detalles = ActualizarDetallesGasto(request.DetallesPagados, remitente, destinatarioNuevo, request.ViajeId);
+            ReemplazarDetalles(existing, detalles);
 
             EnviarNotificacion(remitente, destinatarioNuevo, existing);
             return PagoDto.Create(_pagoRepository.Update(existing));
@@ -246,46 +251,80 @@ namespace Application.Services
             pago.Metodo = request.Metodo;
             if (!string.IsNullOrEmpty(request.Comprobante))
                 pago.Comprobante = request.Comprobante;
+            pago.GrupoPagoId = request.GrupoPagoId ?? pago.GrupoPagoId;
         }
 
-        private void RevertirDetallesGasto(List<DetalleGasto> detallesPrevios, ParticipanteViaje destinatarioAnterior)
+        // Revierte exactamente lo que aportó este pago a cada detalle (PagoDetalle.Monto),
+        // sin tocar lo que hayan aportado otros pagos al mismo detalle.
+        private void RevertirDetallesGasto(List<PagoDetalle> aplicaciones, ParticipanteViaje destinatarioAnterior)
         {
-            foreach (var detalle in detallesPrevios)
+            foreach (var aplicacion in aplicaciones)
             {
-                var detalleGasto = _detalleGastoRepository.GetById(detalle.Id)
-                    ?? throw new NotFoundException($"DetalleGasto {detalle.Id} no encontrado");
+                var detalleGasto = _detalleGastoRepository.GetById(aplicacion.DetalleGastoId)
+                    ?? throw new NotFoundException($"DetalleGasto {aplicacion.DetalleGastoId} no encontrado");
 
-                detalleGasto.MontoPagado -= detalle.MontoPagado;
+                detalleGasto.MontoPagado -= aplicacion.Monto;
                 if (detalleGasto.MontoPagado < 0) detalleGasto.MontoPagado = 0;
                 _detalleGastoRepository.Update(detalleGasto);
 
                 var participanteDeudor = _participanteRepository.GetById(detalleGasto.ParticipanteId)
                     ?? throw new NotFoundException($"Participante {detalleGasto.ParticipanteId} no encontrado");
-                participanteDeudor.SaldoTotal -= detalle.MontoPagado;
+                participanteDeudor.SaldoTotal -= aplicacion.Monto;
                 _participanteRepository.Update(participanteDeudor);
 
-                destinatarioAnterior.SaldoTotal += detalle.MontoPagado;
+                destinatarioAnterior.SaldoTotal += aplicacion.Monto;
             }
 
             _participanteRepository.Update(destinatarioAnterior);
         }
 
-        public void Delete(int id)
+        private static void ReemplazarDetalles(Pago pago, List<PagoDetalle> nuevos)
+        {
+            pago.DetallesPagados.Clear();
+            foreach (var detalle in nuevos)
+                pago.DetallesPagados.Add(detalle);
+        }
+
+        public void Delete(int id, int usuarioId, bool esAdmin)
         {
             var pago = _pagoRepository.GetById(id)
                 ?? throw new NotFoundException("Pago no encontrado");
 
+            ValidarPermisoEliminacion(pago, usuarioId, esAdmin);
             ObtenerViajeActivo(pago.ViajeId);
 
-            if (pago.DetallesPagados.Count > 0)
+            // Los pagos de un mismo grupo (p. ej. una compensación) se eliminan juntos.
+            var aEliminar = new List<Pago> { pago };
+            if (pago.GrupoPagoId.HasValue)
+                aEliminar.AddRange(_pagoRepository.GetByGrupoPagoId(pago.GrupoPagoId.Value)
+                    .Where(p => p.Id != pago.Id && p.ViajeId == pago.ViajeId));
+
+            foreach (var item in aEliminar)
             {
-                var destinatario = _participanteRepository.GetById(pago.DestinatarioId)
-                    ?? throw new NotFoundException("Participante destinatario no encontrado");
+                if (item.DetallesPagados.Count > 0)
+                {
+                    var destinatario = _participanteRepository.GetById(item.DestinatarioId)
+                        ?? throw new NotFoundException("Participante destinatario no encontrado");
 
-                RevertirDetallesGasto(pago.DetallesPagados.ToList(), destinatario);
+                    RevertirDetallesGasto(item.DetallesPagados.ToList(), destinatario);
+                }
+
+                _pagoRepository.Delete(item.Id);
             }
+        }
 
-            _pagoRepository.Delete(id);
+        // Puede eliminar un pago quien lo hizo (el remitente), un organizador del viaje o un Admin.
+        private void ValidarPermisoEliminacion(Pago pago, int usuarioId, bool esAdmin)
+        {
+            if (esAdmin) return;
+
+            var participante = _participanteRepository.GetByIds(usuarioId, pago.ViajeId)
+                ?? throw new Domain.Exceptions.UnauthorizedAccessException("No pertenecés a este viaje.");
+
+            if (participante.EsOrganizador || participante.Id == pago.RemitenteId) return;
+
+            throw new Domain.Exceptions.UnauthorizedAccessException(
+                "Solo quien hizo el pago, un organizador del viaje o un administrador puede eliminarlo.");
         }
 
         // Un viaje finalizado es de solo lectura: no admite altas ni cambios de pagos.
