@@ -53,6 +53,8 @@ namespace Infrastructure.Data
             var entity = GetById(id);
             if (entity == null) return;
 
+            // Lo ya pagado también movió saldos (el deudor sumó y quien pagó el gasto restó),
+            // así que se deshace junto con la deuda: solo se revierte lo que realmente quedaba.
             var saldoReversal = new Dictionary<int, decimal>
             {
                 [entity.ParticipanteId] = -entity.Monto
@@ -60,10 +62,9 @@ namespace Infrastructure.Data
 
             foreach (var detalle in entity.DetallesGasto)
             {
-                if (saldoReversal.ContainsKey(detalle.ParticipanteId))
-                    saldoReversal[detalle.ParticipanteId] += detalle.MontoDebe;
-                else
-                    saldoReversal[detalle.ParticipanteId] = detalle.MontoDebe;
+                var porRevertir = detalle.MontoDebe - detalle.MontoPagado;
+                saldoReversal[detalle.ParticipanteId] = saldoReversal.GetValueOrDefault(detalle.ParticipanteId) + porRevertir;
+                saldoReversal[entity.ParticipanteId] += detalle.MontoPagado;
             }
 
             _context.Gastos.Remove(entity);
