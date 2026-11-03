@@ -16,6 +16,9 @@ namespace Application.Models.Requests
         public string Metodo { get; set; } = string.Empty;
 
         public string Comprobante { get; set; } = string.Empty;
+
+        // Opcional: el mismo valor en varios pagos los vincula (p. ej. una compensación).
+        public Guid? GrupoPagoId { get; set; }
     }
 
     // Para pagar un solo DetalleGasto

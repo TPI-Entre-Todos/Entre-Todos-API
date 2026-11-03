@@ -183,6 +183,9 @@ namespace Infrastructure.Data.Migrations
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<Guid?>("GrupoPagoId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("Metodo")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -205,6 +208,32 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("ViajeId");
 
                     b.ToTable("Pagos");
+                });
+
+            modelBuilder.Entity("Domain.Entities.PagoDetalle", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DetalleGastoId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Monto")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<int>("PagoId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DetalleGastoId");
+
+                    b.HasIndex("PagoId");
+
+                    b.ToTable("PagosDetalle", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.ParticipanteViaje", b =>
@@ -324,21 +353,6 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Viajes");
                 });
 
-            modelBuilder.Entity("PagosDetallesGasto", b =>
-                {
-                    b.Property<int>("DetallesPagadosId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PagoId")
-                        .HasColumnType("int");
-
-                    b.HasKey("DetallesPagadosId", "PagoId");
-
-                    b.HasIndex("PagoId");
-
-                    b.ToTable("PagosDetallesGasto");
-                });
-
             modelBuilder.Entity("Domain.Entities.DetalleGasto", b =>
                 {
                     b.HasOne("Domain.Entities.Gasto", "Gasto")
@@ -434,6 +448,25 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Viaje");
                 });
 
+            modelBuilder.Entity("Domain.Entities.PagoDetalle", b =>
+                {
+                    b.HasOne("Domain.Entities.DetalleGasto", "DetalleGasto")
+                        .WithMany()
+                        .HasForeignKey("DetalleGastoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Pago", "Pago")
+                        .WithMany("DetallesPagados")
+                        .HasForeignKey("PagoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DetalleGasto");
+
+                    b.Navigation("Pago");
+                });
+
             modelBuilder.Entity("Domain.Entities.ParticipanteViaje", b =>
                 {
                     b.HasOne("Domain.Entities.Usuario", "Usuario")
@@ -453,24 +486,14 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Viaje");
                 });
 
-            modelBuilder.Entity("PagosDetallesGasto", b =>
-                {
-                    b.HasOne("Domain.Entities.DetalleGasto", null)
-                        .WithMany()
-                        .HasForeignKey("DetallesPagadosId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.Pago", null)
-                        .WithMany()
-                        .HasForeignKey("PagoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Domain.Entities.Gasto", b =>
                 {
                     b.Navigation("DetallesGasto");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Pago", b =>
+                {
+                    b.Navigation("DetallesPagados");
                 });
 
             modelBuilder.Entity("Domain.Entities.ParticipanteViaje", b =>

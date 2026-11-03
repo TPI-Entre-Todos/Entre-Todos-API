@@ -15,11 +15,15 @@ namespace Domain.Entities
         public string Metodo { get; set; }
         public string Comprobante { get; set; }
 
+        // Vincula pagos que son una sola operación (ej. una compensación A→B y B→A).
+        // Al eliminar uno se eliminan todos los del grupo.
+        public Guid? GrupoPagoId { get; set; }
+
         // Propiedades de navegación
         public Viaje? Viaje { get; set; }
         public ParticipanteViaje? Remitente { get; set; }
         public ParticipanteViaje? Destinatario { get; set; }
-        public ICollection<DetalleGasto> DetallesPagados { get; set; } = [];
+        public ICollection<PagoDetalle> DetallesPagados { get; set; } = [];
 
         public Pago(int remitenteId, int destinatarioId, int viajeId, decimal monto, string metodo, string comprobante)
         {

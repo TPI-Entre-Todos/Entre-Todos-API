@@ -89,11 +89,19 @@ namespace Infrastructure.Data
                 .HasForeignKey(p => p.ViajeId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Un Pago puede pagar múltiples DetalleGasto (M:N)
-            modelBuilder.Entity<Pago>()
-                .HasMany(p => p.DetallesPagados)
-                .WithMany()
-                .UsingEntity("PagosDetallesGasto");
+            // Un Pago se reparte en varios DetalleGasto; cada fila guarda cuánto se aplicó a cada uno
+            modelBuilder.Entity<PagoDetalle>(pd =>
+            {
+                pd.ToTable("PagosDetalle");
+                pd.HasOne(x => x.Pago)
+                    .WithMany(p => p.DetallesPagados)
+                    .HasForeignKey(x => x.PagoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                pd.HasOne(x => x.DetalleGasto)
+                    .WithMany()
+                    .HasForeignKey(x => x.DetalleGastoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
         }
     }

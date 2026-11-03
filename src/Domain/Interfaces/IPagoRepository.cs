@@ -6,5 +6,6 @@ namespace Domain.Interfaces
     {
         List<Pago> GetByViajeId(int viajeId);
         List<Pago> GetByParticipanteId(int participanteId);
+        List<Pago> GetByGrupoPagoId(Guid grupoPagoId);
     }
 }

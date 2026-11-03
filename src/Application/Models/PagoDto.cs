@@ -12,6 +12,7 @@ public class PagoDto
     public DateTime Fecha { get; set; }
     public string Metodo { get; set; }
     public string Comprobante { get; set; }
+    public Guid? GrupoPagoId { get; set; }
     public List<DetalleGastoPagadoDto> DetallesPagados { get; set; } = [];
 
     public static PagoDto Create(Pago pago)
@@ -29,15 +30,17 @@ public class PagoDto
             Fecha = pago.Fecha,
             Metodo = pago.Metodo,
             Comprobante = pago.Comprobante,
+            GrupoPagoId = pago.GrupoPagoId,
             DetallesPagados = pago.DetallesPagados
-                .Select(d => new DetalleGastoPagadoDto
+                .Select(pd => new DetalleGastoPagadoDto
                 {
-                    DetalleGastoId = d.Id,
-                    GastoId = d.GastoId,
-                    ParticipanteId = d.ParticipanteId,
-                    MontoDebe = d.MontoDebe,
-                    MontoPagado = d.MontoPagado,
-                    SaldoPendiente = d.SaldoPendiente
+                    DetalleGastoId = pd.DetalleGastoId,
+                    GastoId = pd.DetalleGasto!.GastoId,
+                    ParticipanteId = pd.DetalleGasto.ParticipanteId,
+                    MontoDebe = pd.DetalleGasto.MontoDebe,
+                    MontoPagado = pd.DetalleGasto.MontoPagado,
+                    SaldoPendiente = pd.DetalleGasto.SaldoPendiente,
+                    MontoAplicado = pd.Monto
                 })
                 .ToList()
         };
@@ -57,4 +60,6 @@ public class DetalleGastoPagadoDto
     public decimal MontoDebe { get; set; }
     public decimal MontoPagado { get; set; }
     public decimal SaldoPendiente { get; set; }
+    // Lo que este pago en particular aportó a este detalle
+    public decimal MontoAplicado { get; set; }
 }
