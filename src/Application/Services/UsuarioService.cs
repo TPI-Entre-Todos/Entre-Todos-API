@@ -197,6 +197,21 @@ namespace Application.Services
             var porEmail = _usuarioRepository.GetUserByEmail(email);
             if (porEmail != null)
             {
+                // Sin esta verificación, alguien podría poner en Cognito el email de otra
+                // persona (sin confirmarlo) y quedarse con su cuenta y su rol.
+                var emailVerificado = string.Equals(
+                    principal.FindFirst("email_verified")?.Value, "true",
+                    StringComparison.OrdinalIgnoreCase);
+
+                if (!emailVerificado)
+                    throw new UnauthorizedException(
+                        "Tenés que verificar tu email antes de vincular tu cuenta.");
+
+                // Una cuenta que ya está vinculada a otra identidad de Cognito no se reasigna.
+                if (!string.IsNullOrEmpty(porEmail.CognitoSub))
+                    throw new UnauthorizedException(
+                        "Ese email ya está asociado a otra cuenta.");
+
                 porEmail.CognitoSub = cognitoSub;
                 return UsuarioDto.Create(_usuarioRepository.Update(porEmail));
             }
