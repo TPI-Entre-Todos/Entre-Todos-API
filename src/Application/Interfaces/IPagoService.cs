@@ -12,7 +12,9 @@ namespace Application.Interfaces
         PagoDto PagarMultiple(PagoMultipleRequest request);
         PagoDto ActualizarSimple(int id, PagoSimpleRequest request);
         PagoDto ActualizarMultiple(int id, PagoMultipleRequest request);
-        void Delete(int id, int usuarioId, bool esAdmin);
+        Task DeleteAsync(int id, int usuarioId, bool esAdmin, CancellationToken ct = default);
+        Task<PagoDto> SubirComprobanteAsync(int id, Stream contenido, long tamanio, int usuarioId, bool esAdmin, CancellationToken ct = default);
+        string ObtenerUrlComprobante(int id, int usuarioId, bool esAdmin);
         List<PagoDto> GetByViajeId(int viajeId);
         List<PagoDto> GetByParticipanteId(int participanteId); 
         List<SaldoDto> CalcularSaldosDelViaje(int viajeId);

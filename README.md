@@ -180,7 +180,26 @@ Todos los endpoints requieren un `id_token` válido. Los marcados como *(Admin)*
 - `PUT /api/gasto/{id}/igualitario`
 - `PUT /api/gasto/{id}/porcentaje`
 - `PUT /api/gasto/{id}/personalizado`
+- `POST /api/gasto/{id}/comprobante` — `multipart/form-data`, campo `archivo`
 - `DELETE /api/gasto/{id}`
+
+### Pagos
+
+- `POST /api/pago/simple`
+- `POST /api/pago/multiple`
+- `GET /api/pago`
+- `GET /api/pago/{id}`
+- `GET /api/pago/viaje/{viajeId}`
+- `GET /api/pago/participante/{participanteId}`
+- `PUT /api/pago/simple/{id}`
+- `PUT /api/pago/multiple/{id}`
+- `POST /api/pago/{id}/comprobante` — `multipart/form-data`, campo `archivo`; el remitente, un organizador del viaje o Admin
+- `GET /api/pago/{id}/comprobante` — URL firmada (15 minutos); cualquier participante del viaje o Admin
+- `DELETE /api/pago/{id}` — el remitente, un organizador del viaje o Admin
+
+### Comprobantes
+
+Los comprobantes de gastos y de pagos se guardan en buckets S3 privados y se validan por su contenido real: se aceptan JPEG, PNG, WebP y PDF de hasta 5 MB. La API nunca expone el bucket: devuelve URLs firmadas que vencen a los 15 minutos. Los buckets se configuran en `S3:Buckets` (`comprobantes` para gastos y `pagos` para pagos).
 
 ## Despliegue en AWS
 

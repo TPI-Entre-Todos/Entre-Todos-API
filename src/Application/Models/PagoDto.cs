@@ -12,6 +12,9 @@ public class PagoDto
     public DateTime Fecha { get; set; }
     public string Metodo { get; set; }
     public string Comprobante { get; set; }
+    // Indica si el pago tiene un archivo de comprobante subido. La URL para verlo se pide
+    // aparte (GET /api/Pago/{id}/comprobante), que valida que quien la pide sea del viaje.
+    public bool TieneComprobante { get; set; }
     public Guid? GrupoPagoId { get; set; }
     public List<DetalleGastoPagadoDto> DetallesPagados { get; set; } = [];
 
@@ -30,6 +33,7 @@ public class PagoDto
             Fecha = pago.Fecha,
             Metodo = pago.Metodo,
             Comprobante = pago.Comprobante,
+            TieneComprobante = !string.IsNullOrEmpty(pago.ComprobanteKey),
             GrupoPagoId = pago.GrupoPagoId,
             DetallesPagados = pago.DetallesPagados
                 .Select(pd => new DetalleGastoPagadoDto

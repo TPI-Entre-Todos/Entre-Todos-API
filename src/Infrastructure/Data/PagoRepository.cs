@@ -45,6 +45,7 @@ public class PagoRepository : GenericRepository<Pago>, IPagoRepository
         existing.Fecha = entity.Fecha;
         existing.Metodo = entity.Metodo;
         existing.Comprobante = entity.Comprobante;
+        existing.ComprobanteKey = entity.ComprobanteKey;
         existing.GrupoPagoId = entity.GrupoPagoId;
 
         _context.SaveChanges();

@@ -177,6 +177,10 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<string>("ComprobanteKey")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
                     b.Property<int>("DestinatarioId")
                         .HasColumnType("int");
 

@@ -68,12 +68,41 @@ namespace Web.Controllers
         }
 
         [HttpDelete("{id:int}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
+        {
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            await _pagoService.DeleteAsync(id, usuarioId, esAdmin, ct);
+            return NoContent();
+        }
+
+        // ─── Comprobante ───────────────────────────────────────────────────────────
+        // El archivo llega como multipart/form-data en el campo "archivo".
+        [HttpPost("{id:int}/comprobante")]
+        [RequestSizeLimit(6 * 1024 * 1024)]
+        public async Task<IActionResult> SubirComprobante(int id, IFormFile archivo, CancellationToken ct)
+        {
+            if (archivo == null || archivo.Length == 0)
+                return BadRequest(new { message = "No se recibió ningún archivo." });
+
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            using var contenido = archivo.OpenReadStream();
+            var resultado = await _pagoService.SubirComprobanteAsync(id, contenido, archivo.Length, usuarioId, esAdmin, ct);
+            return Ok(resultado);
+        }
+
+        // Devuelve una URL firmada de S3, válida por 15 minutos, para ver o descargar el comprobante.
+        [HttpGet("{id:int}/comprobante")]
+        public IActionResult GetComprobante(int id)
+        {
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            var url = _pagoService.ObtenerUrlComprobante(id, usuarioId, esAdmin);
+            return Ok(new { url });
+        }
+
+        private (int usuarioId, bool esAdmin) ObtenerIdentidad()
         {
             int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            bool esAdmin = User.IsInRole("Admin");
-            _pagoService.Delete(id, usuarioId, esAdmin);
-            return NoContent();
+            return (usuarioId, User.IsInRole("Admin"));
         }
 
         [HttpGet("viaje/{viajeId:int}")]

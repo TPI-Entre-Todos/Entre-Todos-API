@@ -47,6 +47,12 @@ namespace Infrastructure.Data
                 gasto.Property(g => g.ComprobanteKey).HasMaxLength(300);
             });
 
+            // Key de S3 del comprobante del pago ("pagos/<guid>.pdf"), en un bucket privado.
+            modelBuilder.Entity<Pago>(pago =>
+            {
+                pago.Property(p => p.ComprobanteKey).HasMaxLength(300);
+            });
+
             // 1. Configuración de Relación: Un Gasto pertenece a un ParticipanteViaje (El que pagó)
             modelBuilder.Entity<Gasto>()
                 .HasOne(g => g.Participante)

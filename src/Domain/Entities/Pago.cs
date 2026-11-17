@@ -15,6 +15,9 @@ namespace Domain.Entities
         public string Metodo { get; set; }
         public string Comprobante { get; set; }
 
+        // Key de S3 del archivo del comprobante ("pagos/<guid>.pdf"), en un bucket privado.
+        public string? ComprobanteKey { get; set; }
+
         // Vincula pagos que son una sola operación (ej. una compensación A→B y B→A).
         // Al eliminar uno se eliminan todos los del grupo.
         public Guid? GrupoPagoId { get; set; }

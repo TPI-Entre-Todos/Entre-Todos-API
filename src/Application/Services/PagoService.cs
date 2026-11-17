@@ -19,6 +19,11 @@ namespace Application.Services
         private readonly INotificacionRepository _notificacionRepository;
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IViajeRepository _viajeRepository;
+        private readonly IFileStorageService _fileStorage;
+
+        private const string ContenedorComprobantes = "pagos";
+        private const long TamanioMaximoComprobanteBytes = 5 * 1024 * 1024; // 5 MB
+        private static readonly TimeSpan VigenciaUrlComprobante = TimeSpan.FromMinutes(15);
 
         public PagoService(
             IPagoRepository pagoRepository,
@@ -27,8 +32,10 @@ namespace Application.Services
             IParticipanteViajeRepository participanteRepository,
             INotificacionRepository notificacionRepository,
             IUsuarioRepository usuarioRepository,
-            IViajeRepository viajeRepository)
+            IViajeRepository viajeRepository,
+            IFileStorageService fileStorage)
         {
+            _fileStorage = fileStorage;
             _pagoRepository = pagoRepository;
             _gastoRepository = gastoRepository;
             _detalleGastoRepository = detalleGastoRepository;
@@ -285,12 +292,12 @@ namespace Application.Services
                 pago.DetallesPagados.Add(detalle);
         }
 
-        public void Delete(int id, int usuarioId, bool esAdmin)
+        public async Task DeleteAsync(int id, int usuarioId, bool esAdmin, CancellationToken ct = default)
         {
             var pago = _pagoRepository.GetById(id)
                 ?? throw new NotFoundException("Pago no encontrado");
 
-            ValidarPermisoEliminacion(pago, usuarioId, esAdmin);
+            ValidarPermisoGestion(pago, usuarioId, esAdmin, "eliminarlo");
             ObtenerViajeActivo(pago.ViajeId);
 
             // Los pagos de un mismo grupo (p. ej. una compensación) se eliminan juntos.
@@ -311,10 +318,74 @@ namespace Application.Services
 
                 _pagoRepository.Delete(item.Id);
             }
+
+            // Los archivos se borran recién con los pagos ya eliminados de la base: si algo
+            // fallara antes, no queremos pagos que apunten a comprobantes inexistentes.
+            // Un borrado fallido acá sólo deja un huérfano en el bucket privado.
+            foreach (var key in aEliminar.Select(p => p.ComprobanteKey).Where(k => !string.IsNullOrEmpty(k)))
+            {
+                try { await _fileStorage.EliminarPorKeyAsync(key!, ContenedorComprobantes, CancellationToken.None); } catch { }
+            }
         }
 
-        // Puede eliminar un pago quien lo hizo (el remitente), un organizador del viaje o un Admin.
-        private void ValidarPermisoEliminacion(Pago pago, int usuarioId, bool esAdmin)
+        // ─── Comprobante ──────────────────────────────────────────────────────────
+
+        public async Task<PagoDto> SubirComprobanteAsync(
+            int id, Stream contenido, long tamanio, int usuarioId, bool esAdmin, CancellationToken ct = default)
+        {
+            var pago = _pagoRepository.GetById(id)
+                ?? throw new NotFoundException("Pago no encontrado");
+
+            ValidarPermisoGestion(pago, usuarioId, esAdmin, "cargar su comprobante");
+            ObtenerViajeActivo(pago.ViajeId);
+
+            // El formato se deduce del contenido del archivo, no de la extensión ni del Content-Type.
+            var extension = ValidadorImagen.ValidarComprobanteYObtenerExtension(
+                contenido, tamanio, TamanioMaximoComprobanteBytes);
+
+            var keyAnterior = pago.ComprobanteKey;
+            var keyNueva = await _fileStorage.SubirPrivadoAsync(
+                contenido, $"{Guid.NewGuid():N}{extension}",
+                ValidadorImagen.ContentTypePara(extension), ContenedorComprobantes, ct);
+
+            try
+            {
+                pago.ComprobanteKey = keyNueva;
+                _pagoRepository.Update(pago);
+            }
+            catch
+            {
+                // La base no quedó actualizada: se descarta el archivo recién subido.
+                try { await _fileStorage.EliminarPorKeyAsync(keyNueva, ContenedorComprobantes, CancellationToken.None); } catch { }
+                throw;
+            }
+
+            if (!string.IsNullOrEmpty(keyAnterior))
+            {
+                try { await _fileStorage.EliminarPorKeyAsync(keyAnterior, ContenedorComprobantes, CancellationToken.None); } catch { }
+            }
+
+            return PagoDto.Create(pago);
+        }
+
+        // Cualquier participante del viaje (o un Admin) puede ver el comprobante de un pago.
+        public string ObtenerUrlComprobante(int id, int usuarioId, bool esAdmin)
+        {
+            var pago = _pagoRepository.GetById(id)
+                ?? throw new NotFoundException("Pago no encontrado");
+
+            if (!esAdmin && _participanteRepository.GetByIds(usuarioId, pago.ViajeId) == null)
+                throw new Domain.Exceptions.UnauthorizedAccessException("No pertenecés a este viaje.");
+
+            if (string.IsNullOrEmpty(pago.ComprobanteKey))
+                throw new NotFoundException("Este pago no tiene comprobante.");
+
+            return _fileStorage.ObtenerUrlFirmada(pago.ComprobanteKey, ContenedorComprobantes, VigenciaUrlComprobante);
+        }
+
+        // Puede gestionar un pago (eliminarlo o cargar su comprobante) quien lo hizo (el remitente),
+        // un organizador del viaje o un Admin.
+        private void ValidarPermisoGestion(Pago pago, int usuarioId, bool esAdmin, string accion)
         {
             if (esAdmin) return;
 
@@ -324,7 +395,7 @@ namespace Application.Services
             if (participante.EsOrganizador || participante.Id == pago.RemitenteId) return;
 
             throw new Domain.Exceptions.UnauthorizedAccessException(
-                "Solo quien hizo el pago, un organizador del viaje o un administrador puede eliminarlo.");
+                $"Solo quien hizo el pago, un organizador del viaje o un administrador puede {accion}.");
         }
 
         // Un viaje finalizado es de solo lectura: no admite altas ni cambios de pagos.
