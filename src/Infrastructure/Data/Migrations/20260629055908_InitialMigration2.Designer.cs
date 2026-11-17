@@ -274,17 +274,6 @@ namespace Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Usuarios");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Email = "admin@entretodos.com",
-                            FechaRegistro = new DateTime(2026, 6, 15, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Nombre = "Admin",
-                            Password = "Admin123!",
-                            Rol = 1
-                        });
                 });
 
             modelBuilder.Entity("Domain.Entities.Viaje", b =>
