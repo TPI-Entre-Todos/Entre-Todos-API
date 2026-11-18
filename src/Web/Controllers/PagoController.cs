@@ -21,21 +21,22 @@ namespace Web.Controllers
         [HttpPost("simple")]
         public IActionResult PagarSimple(PagoSimpleRequest request)
         {
-
-            var result = _pagoService.PagarSimple(request);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            var result = _pagoService.PagarSimple(request, usuarioId, esAdmin);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-
         }
 
         [HttpPost("multiple")]
         public IActionResult PagarMultiple(PagoMultipleRequest request)
         {
-            var result = _pagoService.PagarMultiple(request);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            var result = _pagoService.PagarMultiple(request, usuarioId, esAdmin);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-
         }
 
+        // Devuelve los pagos de todos los viajes: sólo para administradores.
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult Get()
         {
             var pagos = _pagoService.GetAll();
@@ -45,26 +46,25 @@ namespace Web.Controllers
         [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
-            var pago = _pagoService.GetById(id);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            var pago = _pagoService.GetById(id, usuarioId, esAdmin);
             return Ok(pago);
         }
 
         [HttpPut("simple/{id:int}")]
         public IActionResult ActualizarSimple(int id, PagoSimpleRequest request)
         {
-            var updated = _pagoService.ActualizarSimple(id, request);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            var updated = _pagoService.ActualizarSimple(id, request, usuarioId, esAdmin);
             return Ok(updated);
-            
-
         }
 
         [HttpPut("multiple/{id:int}")]
         public IActionResult ActualizarMultiple(int id, PagoMultipleRequest request)
         {
-
-            var updated = _pagoService.ActualizarMultiple(id, request);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            var updated = _pagoService.ActualizarMultiple(id, request, usuarioId, esAdmin);
             return Ok(updated);
-
         }
 
         [HttpDelete("{id:int}")]
@@ -108,14 +108,16 @@ namespace Web.Controllers
         [HttpGet("viaje/{viajeId:int}")]
         public IActionResult GetByViajeId(int viajeId)
         {
-            var pagos = _pagoService.GetByViajeId(viajeId);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            var pagos = _pagoService.GetByViajeId(viajeId, usuarioId, esAdmin);
             return Ok(pagos);
         }
 
         [HttpGet("participante/{participanteId:int}")]
         public IActionResult GetByParticipanteId(int participanteId)
         {
-            var pagos = _pagoService.GetByParticipanteId(participanteId);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            var pagos = _pagoService.GetByParticipanteId(participanteId, usuarioId, esAdmin);
             return Ok(pagos);
         }
     }

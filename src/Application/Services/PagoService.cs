@@ -45,28 +45,32 @@ namespace Application.Services
             _viajeRepository = viajeRepository;
         }
 
+        // Todos los pagos de todos los viajes: el controller lo restringe a Admin.
         public List<PagoDto> GetAll()
         {
             List<Pago> pagos = _pagoRepository.GetAll();
             return PagoDto.CreateList(pagos);
         }
 
-        public PagoDto GetById(int id)
+        public PagoDto GetById(int id, int usuarioId, bool esAdmin)
         {
             Pago pago = _pagoRepository.GetById(id);
             if (pago == null)
                 throw new NotFoundException("Pago no encontrado");
 
+            ValidarMiembroDelViaje(pago.ViajeId, usuarioId, esAdmin);
             return PagoDto.Create(pago);
         }
 
 
-        public PagoDto PagarSimple(PagoSimpleRequest request)
+        public PagoDto PagarSimple(PagoSimpleRequest request, int usuarioId, bool esAdmin)
         {
             ValidarPagoBase(request);
             if (request.DetalleGastoId <= 0)
                 throw new BadRequestException("DetalleGastoId debe ser válido");
 
+            ValidarPermisoRegistro(request.ViajeId, request.ParticipanteId, request.DestinatarioId, usuarioId, esAdmin);
+            ValidarGrupoPago(request.GrupoPagoId, request.ViajeId, usuarioId, esAdmin);
             ObtenerViajeActivo(request.ViajeId);
 
             var remitente = _participanteRepository.GetById(request.ParticipanteId)
@@ -100,7 +104,7 @@ namespace Application.Services
             return PagoDto.Create(pago);
         }
 
-        public PagoDto PagarMultiple(PagoMultipleRequest request)
+        public PagoDto PagarMultiple(PagoMultipleRequest request, int usuarioId, bool esAdmin)
         {
             ValidarPagoBase(request);
             if (request.DetallesPagados == null || request.DetallesPagados.Count == 0)
@@ -108,6 +112,8 @@ namespace Application.Services
 
             ValidarMontoDetalles(request.DetallesPagados, request.Monto!.Value);
 
+            ValidarPermisoRegistro(request.ViajeId, request.ParticipanteId, request.DestinatarioId, usuarioId, esAdmin);
+            ValidarGrupoPago(request.GrupoPagoId, request.ViajeId, usuarioId, esAdmin);
             ObtenerViajeActivo(request.ViajeId);
 
             var remitente = _participanteRepository.GetById(request.ParticipanteId)
@@ -178,16 +184,17 @@ namespace Application.Services
             return detallesEntidades;
         }
 
-        public PagoDto ActualizarSimple(int id, PagoSimpleRequest request)
+        public PagoDto ActualizarSimple(int id, PagoSimpleRequest request, int usuarioId, bool esAdmin)
         {
             ValidarPagoBase(request);
             if (request.DetalleGastoId <= 0)
                 throw new BadRequestException("DetalleGastoId debe ser válido");
 
-            ObtenerViajeActivo(request.ViajeId);
-
             var existing = _pagoRepository.GetById(id)
                 ?? throw new NotFoundException("Pago no encontrado");
+
+            ValidarEdicion(existing, request, usuarioId, esAdmin);
+            ObtenerViajeActivo(request.ViajeId);
 
             var remitente = _participanteRepository.GetById(request.ParticipanteId)
                 ?? throw new NotFoundException("Participante remitente no encontrado");
@@ -215,7 +222,7 @@ namespace Application.Services
             return PagoDto.Create(_pagoRepository.Update(existing));
         }
 
-        public PagoDto ActualizarMultiple(int id, PagoMultipleRequest request)
+        public PagoDto ActualizarMultiple(int id, PagoMultipleRequest request, int usuarioId, bool esAdmin)
         {
             ValidarPagoBase(request);
             if (request.DetallesPagados == null || request.DetallesPagados.Count == 0)
@@ -223,10 +230,11 @@ namespace Application.Services
 
             ValidarMontoDetalles(request.DetallesPagados, request.Monto!.Value);
 
-            ObtenerViajeActivo(request.ViajeId);
-
             var existing = _pagoRepository.GetById(id)
                 ?? throw new NotFoundException("Pago no encontrado");
+
+            ValidarEdicion(existing, request, usuarioId, esAdmin);
+            ObtenerViajeActivo(request.ViajeId);
 
             var remitente = _participanteRepository.GetById(request.ParticipanteId)
                 ?? throw new NotFoundException("Participante remitente no encontrado");
@@ -398,6 +406,74 @@ namespace Application.Services
                 $"Solo quien hizo el pago, un organizador del viaje o un administrador puede {accion}.");
         }
 
+        // Ver pagos: cualquier participante del viaje o un Admin.
+        private void ValidarMiembroDelViaje(int viajeId, int usuarioId, bool esAdmin)
+        {
+            if (esAdmin) return;
+
+            if (_participanteRepository.GetByIds(usuarioId, viajeId) == null)
+                throw new Domain.Exceptions.UnauthorizedAccessException("No pertenecés a este viaje.");
+        }
+
+        // Registrar un pago: alguna de las dos partes (quien paga o quien recibe), un organizador
+        // del viaje o un Admin. Se admite a quien recibe para que pueda anotar "me pagó" y para
+        // las compensaciones, donde quien las carga es remitente de un pago y destinatario del otro.
+        private void ValidarPermisoRegistro(int viajeId, int remitenteId, int destinatarioId, int usuarioId, bool esAdmin)
+        {
+            if (esAdmin) return;
+
+            var participante = _participanteRepository.GetByIds(usuarioId, viajeId)
+                ?? throw new Domain.Exceptions.UnauthorizedAccessException("No pertenecés a este viaje.");
+
+            if (EsParteUOrganizador(participante, remitenteId, destinatarioId)) return;
+
+            throw new Domain.Exceptions.UnauthorizedAccessException(
+                "Solo podés registrar pagos en los que sos quien paga o quien recibe, salvo que seas organizador del viaje.");
+        }
+
+        private static bool EsParteUOrganizador(ParticipanteViaje participante, int remitenteId, int destinatarioId)
+            => participante.EsOrganizador || participante.Id == remitenteId || participante.Id == destinatarioId;
+
+        // Los pagos de un mismo grupo se eliminan juntos. Sin este control, alguien podría sumar
+        // un pago propio a un grupo ajeno (los GrupoPagoId se ven en los GET) y, al borrarlo,
+        // arrastrar los pagos de otros.
+        private void ValidarGrupoPago(Guid? grupoPagoId, int viajeId, int usuarioId, bool esAdmin, int? pagoIdExcluido = null)
+        {
+            if (!grupoPagoId.HasValue) return;
+
+            var existentes = _pagoRepository.GetByGrupoPagoId(grupoPagoId.Value)
+                .Where(p => p.Id != pagoIdExcluido)
+                .ToList();
+            if (existentes.Count == 0) return; // Grupo nuevo.
+
+            if (existentes.Any(p => p.ViajeId != viajeId))
+                throw new BadRequestException("El grupo de pagos indicado pertenece a otro viaje.");
+
+            if (esAdmin) return;
+
+            var participante = _participanteRepository.GetByIds(usuarioId, viajeId)
+                ?? throw new Domain.Exceptions.UnauthorizedAccessException("No pertenecés a este viaje.");
+
+            if (existentes.Any(p => !EsParteUOrganizador(participante, p.RemitenteId, p.DestinatarioId)))
+                throw new Domain.Exceptions.UnauthorizedAccessException(
+                    "No podés sumar este pago a un grupo con pagos en los que no participás.");
+        }
+
+        // Editar: hay que poder gestionar el pago actual, y el pago resultante tiene que ser uno
+        // que el usuario podría registrar. No se permite moverlo a otro viaje.
+        private void ValidarEdicion(Pago existing, PagoBaseRequest request, int usuarioId, bool esAdmin)
+        {
+            ValidarPermisoGestion(existing, usuarioId, esAdmin, "editarlo");
+
+            if (existing.ViajeId != request.ViajeId)
+                throw new BadRequestException("No se puede mover un pago a otro viaje.");
+
+            ValidarPermisoRegistro(request.ViajeId, request.ParticipanteId, request.DestinatarioId, usuarioId, esAdmin);
+
+            if (request.GrupoPagoId.HasValue && request.GrupoPagoId != existing.GrupoPagoId)
+                ValidarGrupoPago(request.GrupoPagoId, request.ViajeId, usuarioId, esAdmin, existing.Id);
+        }
+
         // Un viaje finalizado es de solo lectura: no admite altas ni cambios de pagos.
         private void ObtenerViajeActivo(int viajeId)
         {
@@ -408,14 +484,21 @@ namespace Application.Services
                 throw new BadRequestException("El viaje está finalizado. Reabrilo para registrar o modificar pagos.");
         }
 
-        public List<PagoDto> GetByViajeId(int viajeId)
+        public List<PagoDto> GetByViajeId(int viajeId, int usuarioId, bool esAdmin)
         {
+            ValidarMiembroDelViaje(viajeId, usuarioId, esAdmin);
+
             List<Pago> pagos = _pagoRepository.GetByViajeId(viajeId);
             return PagoDto.CreateList(pagos);
         }
 
-        public List<PagoDto> GetByParticipanteId(int participanteId)
+        public List<PagoDto> GetByParticipanteId(int participanteId, int usuarioId, bool esAdmin)
         {
+            var participante = _participanteRepository.GetById(participanteId)
+                ?? throw new NotFoundException("Participante no encontrado");
+
+            ValidarMiembroDelViaje(participante.ViajeId, usuarioId, esAdmin);
+
             List<Pago> pagos = _pagoRepository.GetByParticipanteId(participanteId);
             return PagoDto.CreateList(pagos);
         }

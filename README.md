@@ -185,14 +185,14 @@ Todos los endpoints requieren un `id_token` válido. Los marcados como *(Admin)*
 
 ### Pagos
 
-- `POST /api/pago/simple`
-- `POST /api/pago/multiple`
-- `GET /api/pago`
-- `GET /api/pago/{id}`
-- `GET /api/pago/viaje/{viajeId}`
-- `GET /api/pago/participante/{participanteId}`
-- `PUT /api/pago/simple/{id}`
-- `PUT /api/pago/multiple/{id}`
+- `POST /api/pago/simple` — quien paga, quien recibe, un organizador del viaje o Admin
+- `POST /api/pago/multiple` — ídem
+- `GET /api/pago` *(Admin)*
+- `GET /api/pago/{id}` — cualquier participante del viaje o Admin
+- `GET /api/pago/viaje/{viajeId}` — cualquier participante del viaje o Admin
+- `GET /api/pago/participante/{participanteId}` — cualquier participante del viaje o Admin
+- `PUT /api/pago/simple/{id}` — el remitente, un organizador del viaje o Admin; no se puede mover a otro viaje
+- `PUT /api/pago/multiple/{id}` — ídem
 - `POST /api/pago/{id}/comprobante` — `multipart/form-data`, campo `archivo`; el remitente, un organizador del viaje o Admin
 - `GET /api/pago/{id}/comprobante` — URL firmada (15 minutos); cualquier participante del viaje o Admin
 - `DELETE /api/pago/{id}` — el remitente, un organizador del viaje o Admin
