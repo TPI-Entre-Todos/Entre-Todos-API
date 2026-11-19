@@ -13,7 +13,6 @@ namespace Domain.Entities
         public decimal Monto { get; set; }
         public DateTime Fecha { get; set; }
         public string Metodo { get; set; }
-        public string Comprobante { get; set; }
 
         // Key de S3 del archivo del comprobante ("pagos/<guid>.pdf"), en un bucket privado.
         public string? ComprobanteKey { get; set; }
@@ -28,7 +27,7 @@ namespace Domain.Entities
         public ParticipanteViaje? Destinatario { get; set; }
         public ICollection<PagoDetalle> DetallesPagados { get; set; } = [];
 
-        public Pago(int remitenteId, int destinatarioId, int viajeId, decimal monto, string metodo, string comprobante)
+        public Pago(int remitenteId, int destinatarioId, int viajeId, decimal monto, string metodo)
         {
             RemitenteId = remitenteId;
             DestinatarioId = destinatarioId;
@@ -36,7 +35,6 @@ namespace Domain.Entities
             Monto = monto;
             Fecha = DateTime.Now;
             Metodo = metodo;
-            Comprobante = comprobante;
         }
 
         public Pago() { }

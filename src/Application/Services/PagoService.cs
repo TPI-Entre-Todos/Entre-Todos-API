@@ -85,8 +85,7 @@ namespace Application.Services
                 request.DestinatarioId,
                 request.ViajeId,
                 request.Monto!.Value,
-                request.Metodo,
-                request.Comprobante
+                request.Metodo
             );
 
             var detalles = ActualizarDetallesGasto(
@@ -128,8 +127,7 @@ namespace Application.Services
                 request.DestinatarioId,
                 request.ViajeId,
                 request.Monto!.Value,
-                request.Metodo,
-                request.Comprobante
+                request.Metodo
             );
 
             var detalles = ActualizarDetallesGasto(request.DetallesPagados, remitente, destinatario, request.ViajeId);
@@ -264,8 +262,6 @@ namespace Application.Services
             pago.ViajeId = request.ViajeId;
             pago.Monto = request.Monto!.Value;
             pago.Metodo = request.Metodo;
-            if (!string.IsNullOrEmpty(request.Comprobante))
-                pago.Comprobante = request.Comprobante;
             pago.GrupoPagoId = request.GrupoPagoId ?? pago.GrupoPagoId;
         }
 

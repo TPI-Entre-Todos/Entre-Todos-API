@@ -173,10 +173,6 @@ namespace Infrastructure.Data.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Comprobante")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
                     b.Property<string>("ComprobanteKey")
                         .HasMaxLength(300)
                         .HasColumnType("varchar(300)");
