@@ -126,6 +126,13 @@ namespace Application.Services
             if (participante.SaldoTotal != 0)
                 throw new BadRequestException("No se puede eliminar un participante con saldos pendientes.");
 
+            // Saldo en cero no alcanza: si ya pagó todo, sus gastos, su parte en cada gasto y sus
+            // pagos siguen apuntándolo. Borrarlo descuadraría los totales de los demás, así que
+            // sólo se puede quitar a quien no tiene ningún movimiento (p. ej. si se sumó por error).
+            if (_repository.TieneMovimientos(participante.Id))
+                throw new BadRequestException(
+                    "No se puede quitar a este participante porque ya tiene gastos o pagos registrados en el viaje.");
+
             _repository.Delete(id);
         }
 
