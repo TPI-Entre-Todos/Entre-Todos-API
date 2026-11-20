@@ -18,75 +18,73 @@ namespace Web.Controllers
             _invitacionService = invitacionService;
         }
 
+        // Invita a un email a un viaje (solo organizador o Admin). El invitador sale del token.
         [HttpPost]
-        public IActionResult Add(InvitacionRequest request)
+        public IActionResult Add([FromBody] InvitacionRequest request)
         {
-            if (request == null)
-                return BadRequest();
-
-            var result = _invitacionService.Add(request);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            var result = _invitacionService.Add(request, usuarioId, esAdmin);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
-        [HttpPut("{token}/aceptar")]
-        public IActionResult AceptarInvitacion([FromRoute] string token)
+        // Las invitaciones enviadas al email del usuario logueado.
+        [HttpGet("mias")]
+        public IActionResult GetMias()
         {
-            if (string.IsNullOrWhiteSpace(token))
-                return BadRequest("Token inválido.");
-
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrWhiteSpace(claim) || !int.TryParse(claim, out var usuarioId))
-                return Unauthorized();
-
-            try
-            {
-                var result = _invitacionService.AceptarInvitacion(token, usuarioId);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var (usuarioId, _) = ObtenerIdentidad();
+            return Ok(_invitacionService.GetMias(usuarioId));
         }
 
-        [HttpPut("{token}/rechazar")]
-        public IActionResult RechazarInvitacion([FromRoute] string token)
+        // Las invitaciones de un viaje (solo organizador o Admin). No incluyen el token.
+        [HttpGet("viaje/{viajeId:int}")]
+        public IActionResult GetPorViaje([FromRoute] int viajeId)
         {
-            if (string.IsNullOrWhiteSpace(token))
-                return BadRequest("Token inválido.");
-
-            try
-            {
-                var result = _invitacionService.RechazarInvitacion(token);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            return Ok(_invitacionService.GetPorViaje(viajeId, usuarioId, esAdmin));
         }
 
+        // Todas las invitaciones del sistema, con tokens: solo Admin.
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult Get()
         {
-            var invitaciones = _invitacionService.GetAll();
-            return Ok(invitaciones);
+            return Ok(_invitacionService.GetAll());
         }
 
         [HttpGet("{id:int}")]
         public IActionResult GetById([FromRoute] int id)
         {
-            var invitacion = _invitacionService.GetById(id);
-            if (invitacion == null)
-                return NotFound();
-
-            return Ok(invitacion);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            return Ok(_invitacionService.GetById(id, usuarioId, esAdmin));
         }
+
+        // Los errores los traduce GlobalExceptionHandlingMiddleware (problem+json con `detail`).
+        [HttpPut("{token}/aceptar")]
+        public IActionResult AceptarInvitacion([FromRoute] string token)
+        {
+            var (usuarioId, _) = ObtenerIdentidad();
+            return Ok(_invitacionService.AceptarInvitacion(token, usuarioId));
+        }
+
+        [HttpPut("{token}/rechazar")]
+        public IActionResult RechazarInvitacion([FromRoute] string token)
+        {
+            var (usuarioId, _) = ObtenerIdentidad();
+            return Ok(_invitacionService.RechazarInvitacion(token, usuarioId));
+        }
+
         [HttpDelete("{id:int}")]
         public IActionResult Delete([FromRoute] int id)
         {
-            _invitacionService.Delete(id);
+            var (usuarioId, esAdmin) = ObtenerIdentidad();
+            _invitacionService.Delete(id, usuarioId, esAdmin);
             return NoContent();
+        }
+
+        private (int usuarioId, bool esAdmin) ObtenerIdentidad()
+        {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            return (usuarioId, User.IsInRole("Admin"));
         }
     }
 }

@@ -16,7 +16,7 @@ public class PagoRepository : GenericRepository<Pago>, IPagoRepository
             .Include(p => p.Remitente)
             .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
-            .Include(p => p.DetallesPagados)
+            .Include(p => p.DetallesPagados).ThenInclude(pd => pd.DetalleGasto)
             .ToList();
     }
 
@@ -26,7 +26,7 @@ public class PagoRepository : GenericRepository<Pago>, IPagoRepository
             .Include(p => p.Remitente)
             .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
-            .Include(p => p.DetallesPagados)
+            .Include(p => p.DetallesPagados).ThenInclude(pd => pd.DetalleGasto)
             .FirstOrDefault(p => p.Id == id);
     }
 
@@ -44,7 +44,8 @@ public class PagoRepository : GenericRepository<Pago>, IPagoRepository
         existing.Monto = entity.Monto;
         existing.Fecha = entity.Fecha;
         existing.Metodo = entity.Metodo;
-        existing.Comprobante = entity.Comprobante;
+        existing.ComprobanteKey = entity.ComprobanteKey;
+        existing.GrupoPagoId = entity.GrupoPagoId;
 
         _context.SaveChanges();
         return existing;
@@ -56,8 +57,16 @@ public class PagoRepository : GenericRepository<Pago>, IPagoRepository
             .Include(p => p.Remitente)
             .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
-            .Include(p => p.DetallesPagados)
+            .Include(p => p.DetallesPagados).ThenInclude(pd => pd.DetalleGasto)
             .Where(p => p.ViajeId == viajeId)
+            .ToList();
+    }
+
+    public List<Pago> GetByGrupoPagoId(Guid grupoPagoId)
+    {
+        return _context.Pagos
+            .Include(p => p.DetallesPagados).ThenInclude(pd => pd.DetalleGasto)
+            .Where(p => p.GrupoPagoId == grupoPagoId)
             .ToList();
     }
 
@@ -67,7 +76,7 @@ public class PagoRepository : GenericRepository<Pago>, IPagoRepository
             .Include(p => p.Remitente)
             .Include(p => p.Destinatario)
             .Include(p => p.Viaje)
-            .Include(p => p.DetallesPagados)
+            .Include(p => p.DetallesPagados).ThenInclude(pd => pd.DetalleGasto)
             .Where(p => p.RemitenteId == participanteId)
             .ToList();
     }

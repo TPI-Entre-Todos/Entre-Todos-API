@@ -277,11 +277,6 @@ namespace Infrastructure.Data.Migrations
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
-            migrationBuilder.InsertData(
-                table: "Usuarios",
-                columns: new[] { "Id", "Email", "FechaRegistro", "Nombre", "Password", "Rol" },
-                values: new object[] { 1, "admin@entretodos.com", new DateTime(2026, 6, 15, 0, 0, 0, 0, DateTimeKind.Utc), "Admin", "Admin123!", 1 });
-
             migrationBuilder.CreateIndex(
                 name: "IX_DetallesGasto_GastoId",
                 table: "DetallesGasto",

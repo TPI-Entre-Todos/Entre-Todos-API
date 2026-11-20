@@ -24,7 +24,35 @@ namespace Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Usuario>().HasData(CreateUsuarioSeed());
+            // Identidad federada: el "sub" de Cognito es la clave estable del usuario.
+            // Índice único para garantizar que un mismo usuario de Cognito no se duplique en la base.
+            modelBuilder.Entity<Usuario>(usuario =>
+            {
+                usuario.Property(u => u.CognitoSub).HasMaxLength(64);
+                usuario.HasIndex(u => u.CognitoSub).IsUnique();
+                usuario.Property(u => u.AvatarUrl).HasMaxLength(500);
+            });
+
+            // Es una key de S3 ("portadas/<guid>.jpg"), no una URL: alcanza con menos espacio
+            // que AvatarUrl.
+            modelBuilder.Entity<Viaje>(viaje =>
+            {
+                viaje.Property(v => v.PortadaKey).HasMaxLength(300);
+                viaje.Property(v => v.Estado).HasMaxLength(20);
+            });
+
+            // Key de S3 del comprobante ("comprobantes/<guid>.pdf"), en un bucket privado.
+            modelBuilder.Entity<Gasto>(gasto =>
+            {
+                gasto.Property(g => g.ComprobanteKey).HasMaxLength(300);
+            });
+
+            // Key de S3 del comprobante del pago ("pagos/<guid>.pdf"), en un bucket privado.
+            modelBuilder.Entity<Pago>(pago =>
+            {
+                pago.Property(p => p.ComprobanteKey).HasMaxLength(300);
+            });
+
             // 1. Configuración de Relación: Un Gasto pertenece a un ParticipanteViaje (El que pagó)
             modelBuilder.Entity<Gasto>()
                 .HasOne(g => g.Participante)
@@ -67,19 +95,20 @@ namespace Infrastructure.Data
                 .HasForeignKey(p => p.ViajeId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Un Pago puede pagar múltiples DetalleGasto (M:N)
-            modelBuilder.Entity<Pago>()
-                .HasMany(p => p.DetallesPagados)
-                .WithMany()
-                .UsingEntity("PagosDetallesGasto");
-
-        }
-        private Usuario[] CreateUsuarioSeed()
-        {
-            return new[]
+            // Un Pago se reparte en varios DetalleGasto; cada fila guarda cuánto se aplicó a cada uno
+            modelBuilder.Entity<PagoDetalle>(pd =>
             {
-                    new Usuario { Id = 1, Nombre="Admin", Email="admin@entretodos.com",Password="Admin123!", FechaRegistro= new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc), Rol= Rol.Admin }
-            };
+                pd.ToTable("PagosDetalle");
+                pd.HasOne(x => x.Pago)
+                    .WithMany(p => p.DetallesPagados)
+                    .HasForeignKey(x => x.PagoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                pd.HasOne(x => x.DetalleGasto)
+                    .WithMany()
+                    .HasForeignKey(x => x.DetalleGastoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
         }
     }
 

@@ -9,4 +9,6 @@ public class ViajeRequest
     public string? Descripcion { get; set; }
 
     public string? Moneda { get; set; }
+    public DateTime? FechaInicio { get; set; }
+    public DateTime? FechaFin { get; set; }
 }

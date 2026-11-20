@@ -9,6 +9,7 @@ namespace Application.Models
         public int Id { get; set; }
         public int UsuarioId { get; set; }
         public string NombreUsuario { get; set; } = string.Empty;
+        public string? AvatarUrl { get; set; }
         public int ViajeId { get; set; }
         public bool EsOrganizador { get; set; }
         public decimal SaldoTotal { get; set; }
@@ -22,6 +23,7 @@ namespace Application.Models
                 Id = entity.Id,
                 UsuarioId = entity.UsuarioId,
                 NombreUsuario = entity.Usuario?.Nombre ?? string.Empty,
+                AvatarUrl = entity.Usuario?.AvatarUrl,
                 ViajeId = entity.ViajeId,
                 EsOrganizador = entity.EsOrganizador,
                 SaldoTotal = entity.SaldoTotal,

@@ -20,6 +20,9 @@ namespace Application.Interfaces
         GastoDto ActualizarPorPorcentaje(int id, GastoPorPorcentajeRequest dto, int userId, bool esAdmin);
         GastoDto ActualizarPersonalizado(int id, GastoPersonalizadoRequest dto, int userId, bool esAdmin);
 
+        // ─── Comprobante ──────────────────────────────────────────────────────────
+        Task<GastoDto> SubirComprobanteAsync(int id, Stream contenido, long tamanio, int userId, bool esAdmin, CancellationToken ct = default);
+
         // ─── Baja ─────────────────────────────────────────────────────────────────
         void EliminarGasto(int id, int userId, bool esAdmin);
     }

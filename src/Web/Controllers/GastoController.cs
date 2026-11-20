@@ -88,6 +88,20 @@ namespace Web.Controllers
             return Ok(_gastoService.ActualizarPersonalizado(id, dto, userId, esAdmin));
         }
 
+        // ─── Comprobante ───────────────────────────────────────────────────────────
+        [HttpPost("{id:int}/comprobante")]
+        [RequestSizeLimit(6 * 1024 * 1024)]
+        public async Task<IActionResult> SubirComprobante(int id, IFormFile archivo, CancellationToken ct)
+        {
+            if (archivo == null || archivo.Length == 0)
+                return BadRequest(new { message = "No se recibió ningún archivo." });
+
+            var (userId, esAdmin) = ObtenerIdentidad();
+            using var contenido = archivo.OpenReadStream();
+            var resultado = await _gastoService.SubirComprobanteAsync(id, contenido, archivo.Length, userId, esAdmin, ct);
+            return Ok(resultado);
+        }
+
         // ─── Eliminación ───────────────────────────────────────────────────────────
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)

@@ -40,6 +40,15 @@ namespace Infrastructure.Data
                 .FirstOrDefault(pv => pv.UsuarioId == usuarioId && pv.ViajeId == viajeId);
         }
 
+        // Son las mismas tablas que apuntan al participante con FK Restrict: si alguna tiene
+        // filas, la base no deja borrarlo.
+        public bool TieneMovimientos(int participanteId)
+        {
+            return _context.Gastos.Any(g => g.ParticipanteId == participanteId)
+                || _context.DetallesGasto.Any(d => d.ParticipanteId == participanteId)
+                || _context.Pagos.Any(p => p.RemitenteId == participanteId || p.DestinatarioId == participanteId);
+        }
+
         public override ParticipanteViaje GetById(int id)
         {
             return _context.ParticipantesViaje

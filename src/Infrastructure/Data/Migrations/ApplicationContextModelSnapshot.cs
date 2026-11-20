@@ -62,8 +62,9 @@ namespace Infrastructure.Data.Migrations
                     b.Property<string>("Categoria")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Comprobante")
-                        .HasColumnType("longtext");
+                    b.Property<string>("ComprobanteKey")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
@@ -172,15 +173,18 @@ namespace Infrastructure.Data.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Comprobante")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<string>("ComprobanteKey")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
 
                     b.Property<int>("DestinatarioId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<Guid?>("GrupoPagoId")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Metodo")
                         .IsRequired()
@@ -204,6 +208,32 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("ViajeId");
 
                     b.ToTable("Pagos");
+                });
+
+            modelBuilder.Entity("Domain.Entities.PagoDetalle", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DetalleGastoId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Monto")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<int>("PagoId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DetalleGastoId");
+
+                    b.HasIndex("PagoId");
+
+                    b.ToTable("PagosDetalle", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.ParticipanteViaje", b =>
@@ -250,6 +280,14 @@ namespace Infrastructure.Data.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("CognitoSub")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -261,27 +299,15 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
                     b.Property<int>("Rol")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Usuarios");
+                    b.HasIndex("CognitoSub")
+                        .IsUnique();
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Email = "admin@entretodos.com",
-                            FechaRegistro = new DateTime(2026, 6, 15, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Nombre = "Admin",
-                            Password = "Admin123!",
-                            Rol = 1
-                        });
+                    b.ToTable("Usuarios");
                 });
 
             modelBuilder.Entity("Domain.Entities.Viaje", b =>
@@ -296,7 +322,18 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
                     b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaFin")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaInicio")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Moneda")
@@ -307,24 +344,13 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<string>("PortadaKey")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Viajes");
-                });
-
-            modelBuilder.Entity("PagosDetallesGasto", b =>
-                {
-                    b.Property<int>("DetallesPagadosId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PagoId")
-                        .HasColumnType("int");
-
-                    b.HasKey("DetallesPagadosId", "PagoId");
-
-                    b.HasIndex("PagoId");
-
-                    b.ToTable("PagosDetallesGasto");
                 });
 
             modelBuilder.Entity("Domain.Entities.DetalleGasto", b =>
@@ -422,6 +448,25 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Viaje");
                 });
 
+            modelBuilder.Entity("Domain.Entities.PagoDetalle", b =>
+                {
+                    b.HasOne("Domain.Entities.DetalleGasto", "DetalleGasto")
+                        .WithMany()
+                        .HasForeignKey("DetalleGastoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Pago", "Pago")
+                        .WithMany("DetallesPagados")
+                        .HasForeignKey("PagoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DetalleGasto");
+
+                    b.Navigation("Pago");
+                });
+
             modelBuilder.Entity("Domain.Entities.ParticipanteViaje", b =>
                 {
                     b.HasOne("Domain.Entities.Usuario", "Usuario")
@@ -441,24 +486,14 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Viaje");
                 });
 
-            modelBuilder.Entity("PagosDetallesGasto", b =>
-                {
-                    b.HasOne("Domain.Entities.DetalleGasto", null)
-                        .WithMany()
-                        .HasForeignKey("DetallesPagadosId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.Pago", null)
-                        .WithMany()
-                        .HasForeignKey("PagoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Domain.Entities.Gasto", b =>
                 {
                     b.Navigation("DetallesGasto");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Pago", b =>
+                {
+                    b.Navigation("DetallesPagados");
                 });
 
             modelBuilder.Entity("Domain.Entities.ParticipanteViaje", b =>
